@@ -1,0 +1,18 @@
+# Environment variables
+.env
+
+# Python virtual environment
+venv/
+__pycache__/
+*.pyc
+
+# Data directories (cached data)
+arr/
+snowflake-data/
+is-cases/
+
+# MacOS
+.DS_Store
+
+# Claude Code
+.claude/settings.local.json

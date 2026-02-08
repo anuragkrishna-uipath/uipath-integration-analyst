@@ -1,0 +1,38 @@
+{
+  "status": 0,
+  "result": {
+    "records": [
+      {
+        "attributes": {
+          "type": "Case",
+          "url": "/services/data/v65.0/sobjects/Case/500Pa000015mr1rIAA"
+        },
+        "Id": "500Pa000015mr1rIAA",
+        "CaseNumber": "02802661",
+        "Subject": "Missing Built-In Role: \"Integration Service Administrator\"",
+        "RecordType": {
+          "attributes": {
+            "type": "RecordType",
+            "url": "/services/data/v65.0/sobjects/RecordType/01236000001QF1EAAW"
+          },
+          "Name": "Incident"
+        },
+        "Status": "Closed",
+        "CreatedDate": "2026-02-06T19:12:06.000+0000",
+        "Priority": "Medium",
+        "Description": "\"Hello,\nWe have identified that the default, built-in role 'Integration Service Administrator' is completely missing from our Automation Cloud tenant. We have confirmed this by checking the master list under Admin > Manage access > Roles.\nBecause this role is missing, we are unable to manage permissions for the Integration Service. This prevents us from granting our unattended bots the necessary access to use connections, resulting in the error: 'User does not have Connections.View permissions'.\nPlease restore the 'Integration Service Administrator' role to our tenant so we can proceed with our automation projects.\"",
+        "Owner": {
+          "attributes": {
+            "type": "Name",
+            "url": "/services/data/v65.0/sobjects/User/005Pa000006hOEvIAM"
+          },
+          "Name": "Aditi Singh"
+        },
+        "Deployment_Type_Product_Component__c": "Automation Cloud  :  Integration Services"
+      }
+    ],
+    "totalSize": 1,
+    "done": true
+  },
+  "warnings": []
+}
