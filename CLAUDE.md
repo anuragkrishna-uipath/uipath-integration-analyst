@@ -14,12 +14,12 @@ This is a Product Manager assistant toolkit for analyzing UiPath customer data. 
    - `subsidiary-license-info.sh` - Queries Snowflake for customer license data
    - `sf-integration-cases.sh` - Queries Salesforce for support tickets
    - `snowflake-is-usage.sh` - Queries Snowflake for Integration Service API usage
-   - All scripts save results to `~/Documents/pm-assistant/` subdirectories with timestamped filenames
+   - All scripts save results to `~/Documents/uipath-integration-analyst/` subdirectories with timestamped filenames
 
 2. **Data Storage Locations**
-   - `~/Documents/pm-assistant/arr/` - ARR and API usage CSV files (cached weekly)
-   - `~/Documents/pm-assistant/snowflake-data/` - License consumption CSV files (cached per customer)
-   - `~/Documents/pm-assistant/is-cases/` - Support ticket JSON files (cached 24 hours)
+   - `~/Documents/uipath-integration-analyst/arr/` - ARR and API usage CSV files (cached weekly)
+   - `~/Documents/uipath-integration-analyst/snowflake-data/` - License consumption CSV files (cached per customer)
+   - `~/Documents/uipath-integration-analyst/is-cases/` - Support ticket JSON files (cached 24 hours)
 
 3. **Claude Skills** (in `skills/` directory)
    - Each skill has a `skill.md` file defining its behavior
@@ -50,13 +50,17 @@ This is a Product Manager assistant toolkit for analyzing UiPath customer data. 
 ./sf-integration-cases.sh 180 "Customer Name"
 
 # Fetch Integration Service API usage (last 3 months)
+# Query all customers
 ./snowflake-is-usage.sh "your.email@uipath.com"
+
+# Query specific customer (checks cache first, queries if not found)
+./snowflake-is-usage.sh "Customer Name" "your.email@uipath.com"
 ```
 
 ### Skills
 
 ```bash
-# Generate comprehensive customer profile
+# Generate comprehensive customer profile (includes web search automatically)
 /customer-profile "Customer Name"
 
 # Search for customer in news
@@ -68,8 +72,9 @@ This is a Product Manager assistant toolkit for analyzing UiPath customer data. 
 # Query Snowflake license info
 /snowflake-customer-license-info "Customer Name"
 
-# Query Snowflake IS usage
-/snowflake-is-usage
+# Query Snowflake IS usage (checks cache for customer, queries if not found)
+/snowflake-is-usage "Customer Name" your.email@uipath.com
+/snowflake-is-usage your.email@uipath.com
 ```
 
 ## Critical Business Logic
@@ -107,17 +112,18 @@ When calculating API capacity utilization:
 
 ### Caching Strategy
 
-The customer-profile skill implements intelligent caching to minimize authentication flows:
-- **ARR data**: Check `~/Documents/pm-assistant/arr/` - use if < 7 days old
-- **License data**: Check `~/Documents/pm-assistant/snowflake-data/` - use if customer-specific file exists (any age)
-- **Support tickets**: Check `~/Documents/pm-assistant/is-cases/` - use if < 24 hours old
+The customer-profile skill implements intelligent caching with data validation to minimize authentication flows:
+- **ARR data**: Check `~/Documents/uipath-integration-analyst/arr/` - use if < 7 days old
+- **License data**: Check `~/Documents/uipath-integration-analyst/snowflake-data/` - use if customer-specific file exists AND contains data rows (any age)
+- **IS Usage data**: Check `~/Documents/uipath-integration-analyst/snowflake-data/` - use if customer-specific file exists AND < 7 days old AND contains data rows (pattern: `snowflake_is_usage_*<customer_name>*.csv`)
+- **Support tickets**: Check `~/Documents/uipath-integration-analyst/is-cases/` - use if < 24 hours old AND contains records (totalSize > 0)
 
-Always check cache before fetching new data to avoid unnecessary authentication flows.
+**Data Validation**: All skills validate cached files contain actual data before using them. Empty cache files (no data rows/records) trigger fresh queries automatically. This prevents false positives from empty result files caused by query failures or missing data.
 
 ## File Organization
 
 ```
-pm-assistant/
+uipath-integration-analyst/
 ├── arr/                          # ARR and API usage data (CSV)
 ├── snowflake-data/               # License consumption data (CSV)
 ├── is-cases/                     # Support tickets (JSON)
@@ -140,12 +146,19 @@ pm-assistant/
 **Primary Table: Snowflake `prod_customer360.customerprofile.CustomerSubsidiaryLicenseProfile`**
 - Contains license consumption by month, customer, subsidiary, product
 - 63 columns including account metadata, license details, usage metrics (MAU/MEU)
-- Query by `SUBSIDIARYNAME = 'Customer Name'`
+- Query by `SUBSIDIARYNAME ILIKE '%Customer Name%'` (partial, case-insensitive matching)
+- No record limit - retrieves all matching records for complete customer view
 
 **Salesforce Cases**
 - Filter: `Deployment_Type_Product_Component__c LIKE '%Integration Service%'`
 - Date range: `CreatedDate = LAST_N_DAYS:N`
 - Key fields: `Status`, `Priority`, `Subject`, `Description`, `Solution__c`
+
+**Snowflake IS Usage Telemetry**
+- Source: `PROD_ELEMENTSERVICE.APPINS.INTEGRATIONSERVICE_TELEMETRY_STANDARDIZED`
+- Filter: `s.name ILIKE '%Customer Name%'` (partial, case-insensitive matching)
+- Time range: Last 3 months
+- Limited to 500 records per query
 
 ## Environment Setup
 
@@ -163,5 +176,15 @@ When generating customer profiles:
 1. Use consolidated markdown tables with Category column
 2. Include 4 sections: Account, Licenses, IS Usage, Support
 3. Follow each section with **Insight:** commentary (1-2 sentences)
-4. Generate 3-5 data-driven Action Items prioritized by revenue impact
-5. Include metadata footer with data source dates
+4. **Always perform web search** for customer context using `/customer-in-news` skill
+5. Generate 3-5 data-driven Action Items prioritized by revenue impact and aligned with customer's strategic initiatives
+6. Incorporate web search findings into recommendations
+7. Keep use cases general (avoid connector-specific recommendations)
+8. Include metadata footer with data source dates
+
+ ## Communication Style
+
+  - **Be precise and data-driven**: All responses must include specific data, metrics, and quantifiable information
+  - Avoid vague statements like "might", "could", "possibly" without data to support them
+  - When analyzing customer data, always cite specific numbers, percentages, and trends
+  - If data is unavailable, explicitly state what's missing rather than making general statements

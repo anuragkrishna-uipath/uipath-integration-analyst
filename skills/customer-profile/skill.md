@@ -3,7 +3,7 @@ name: customer-profile
 description: Generate comprehensive customer profile with ARR, license consumption, usage data, support tickets, and action items
 user-invocable: true
 argument-hint: "[customer_name]"
-allowed-tools: Bash, Read, Glob, Grep, Task, AskUserQuestion
+allowed-tools: Bash, Read, Glob, Grep, Task, AskUserQuestion, Skill
 ---
 
 # Customer Profile Skill
@@ -21,7 +21,7 @@ This skill provides a 360-degree view of a customer by aggregating:
 
 ## Data Sources
 
-1. **ARR Data**: `~/Documents/pm-assistant/arr/` folder (Excel/CSV files)
+1. **ARR Data**: `~/Documents/uipath-integration-analyst/arr/` folder (Excel/CSV files)
 2. **License Consumption**: Snowflake CustomerSubsidiaryLicenseProfile
 3. **IS Usage**: Snowflake Integration Service telemetry (last 3 months)
 4. **Support Tickets**: Salesforce cases (last 6 months)
@@ -35,49 +35,42 @@ When this skill is invoked:
 - If not provided, ask user using AskUserQuestion
 - Normalize name for searches (handle variations)
 
-### 2. Check for Cached Data (Important!)
+### 2. Data Collection Strategy
 
-Before fetching new data, check local cache to avoid unnecessary API calls:
-
-**ARR/IS Usage Data:**
-- Check `~/Documents/pm-assistant/arr/` for CSV files
-- Use `stat` or `ls -l` to get file modification date
-- If file modified within last 7 days, use cached data
-- If older than 7 days or not found, data will be fetched from source
-
-**License Consumption Data:**
-- Check `~/Documents/pm-assistant/snowflake-data/` for files matching pattern: `subsidiary_license_*<customer_name_normalized>*.csv`
-- Normalize customer name (lowercase, replace spaces/commas with underscores)
-- If customer-specific file exists (regardless of age), use it
-- Only fetch if no file exists for this customer
-
-**Support Tickets:**
-- Check `~/Documents/pm-assistant/is-cases/` for files matching pattern: `sf_integration_cases_*<customer_name_normalized>*.json`
-- Use `stat` or `ls -l` to get file modification date
-- If file modified within last 24 hours, use cached data
-- If older than 24 hours or not found, fetch new data
+All data gathering is delegated to specialized skills that handle caching automatically:
+- **ARR Data**: Read directly from `~/Documents/uipath-integration-analyst/arr/` (7-day cache)
+- **License Data**: Handled by `/snowflake-customer-license-info` skill (uses cached if exists)
+- **IS Usage Data**: Handled by `/snowflake-is-usage` skill (7-day cache)
+- **Support Tickets**: Handled by `/sf-integration-cases` skill (24-hour cache)
+- **Customer News**: Handled by `/customer-in-news` skill (real-time web search)
 
 ### 3. Gather ARR Data
-- Search for ARR data in `~/Documents/pm-assistant/arr/` folder
+- Search for ARR data in `~/Documents/uipath-integration-analyst/arr/` folder
 - Look for most recent CSV file (check modification date)
 - Search for customer name in the file using Grep
 - Extract: ARR bucket, region, account owner, CSM, ticket count
 
 ### 4. Gather License Consumption Data
-- First check cache (see step 2)
-- If not cached, execute: `bash ~/Documents/pm-assistant/subsidiary-license-info.sh "<customer_name>" "your.email@company.com"`
-- Parse the output CSV from `~/Documents/pm-assistant/snowflake-data/`
+- Invoke the `/snowflake-customer-license-info` skill with customer name
+- The skill will handle caching automatically (uses cached data if customer file exists)
+- After skill completes, read the cached CSV file from `~/Documents/uipath-integration-analyst/snowflake-data/`
 - Extract latest month data:
   - Total licenses by product type
   - Key products (Studio, StudioX, robots, DU units, AI units, API calls)
   - MAU/MEU numbers
 
 ### 5. Gather Integration Service Usage
-- Check ARR CSV file for IS usage by originator (already contains this data)
-- Extract:
-  - Total API calls
-  - Top originators (IS Pollers, Robot, etc.) with percentages
-  - Identify primary integration pattern
+
+**Invoke the skill:**
+- Invoke the `/snowflake-is-usage` skill with customer name and username
+- The skill will handle caching automatically (7-day cache, fetches if expired or customer not found)
+- After skill completes, read the cached CSV file from `~/Documents/uipath-integration-analyst/snowflake-data/`
+
+**Extract from data:**
+- Total API calls
+- Top originators (IS Pollers, Robot, etc.) with percentages
+- Top connector keys by usage
+- Identify primary integration pattern
 
 **IMPORTANT - IS Licensing Rules:**
 - **IS Poller calls do NOT count toward API licensing limits**
@@ -86,16 +79,24 @@ Before fetching new data, check local cache to avoid unnecessary API calls:
 - High poller usage (>90%) is an efficiency concern, NOT a licensing concern
 
 ### 6. Gather Support Tickets (Last 6 Months)
-- First check cache (see step 2)
-- If not cached, execute: `bash ~/Documents/pm-assistant/sf-integration-cases.sh 180 "<customer_name>"`
-- Parse the output JSON from `~/Documents/pm-assistant/is-cases/`
+- Invoke the `/sf-integration-cases` skill with 180 days and customer name
+- The skill will handle caching automatically (24-hour cache, fetches if expired or customer not found)
+- After skill completes, read the cached JSON file from `~/Documents/uipath-integration-analyst/is-cases/`
 - Extract:
   - Total tickets
   - Open vs closed tickets
   - Priority distribution
   - Common themes from ticket subjects
 
-### 7. Format Output
+### 7. Research Customer Context (Always Required)
+
+**Invoke the customer news skill:**
+- Invoke the `/customer-in-news` skill with customer name using the Skill tool
+- The skill will perform web search for recent news about the customer
+- Look for: strategic initiatives, partnerships, digital transformation efforts, industry trends
+- Incorporate findings into recommendations and action items
+
+### 8. Format Output
 
 Present data in a single consolidated table with insights after each section, followed by action items:
 
@@ -165,9 +166,9 @@ Present data in a single consolidated table with insights after each section, fo
 - For Support, summarize themes rather than listing individual tickets
 - Action items should be 3-5 items maximum, prioritized by impact
 
-### 8. Generate Action Items
+### 9. Generate Action Items
 
-Action items should be derived from data patterns. Limit to 3-5 high-impact items:
+Action items should be derived from data patterns AND web search findings. Limit to 3-5 high-impact items:
 
 **Data Pattern → Action Mapping:**
 
@@ -183,19 +184,26 @@ Action items should be derived from data patterns. Limit to 3-5 high-impact item
 
 Prioritize action items by:
 1. Revenue impact (overages, downsell risk, upsell opportunities)
-2. Customer experience (open tickets, authentication issues)
-3. Optimization opportunities (efficiency gains, cost reduction)
+2. Alignment with customer's strategic initiatives (from web search)
+3. Customer experience (open tickets, authentication issues)
+4. Optimization opportunities (efficiency gains, cost reduction)
+
+**Incorporate web search findings:**
+- If customer is pursuing digital transformation → Recommend aligning automation roadmap with their strategic goals
+- If customer in growth phase → Position expansion opportunities and scalability features
+- If customer facing challenges → Proactive support and optimization recommendations
 
 ## Use Case Detection
 
-Infer primary use case from usage patterns:
+Infer primary use case from usage patterns (KEEP IT GENERAL - avoid specific connector names):
 
-- **Document Processing**: High DU Units consumption
-- **Email Automation**: High Outlook/Gmail connector usage
-- **Data Integration**: High Snowflake/Salesforce/database connector usage
-- **API Orchestration**: High IS Pollers, diverse connectors
-- **Development/Testing**: High Studio/Test Robot usage
-- **Attended Automation**: High Assistant licenses, moderate robot usage
+- **Document Processing**: High DU Units consumption, document-related API activity
+- **Email & Communication Automation**: High communication-related connector usage patterns
+- **Data Integration & Synchronization**: High database and enterprise system integration activity
+- **API Orchestration & Event-Driven Automation**: High IS Pollers activity, diverse connector portfolio
+- **Development & Testing**: High Studio usage, test automation patterns
+- **Attended Automation**: High Assistant licenses, moderate robot usage for desktop workflows
+- **Hybrid Automation**: Balanced mix of attended and unattended robots with integration services
 
 ## Example Usage
 
@@ -215,11 +223,13 @@ Infer primary use case from usage patterns:
 ## Notes
 
 - **Caching behavior**: Automatically uses cached data when available to reduce API calls
-  - ARR/IS Usage: Uses cached data if < 7 days old
-  - License data: Uses cached data if customer file exists
-  - Support tickets: Uses cached data if < 24 hours old
+  - ARR data: Uses cached data if < 7 days old, fetches if older or not found
+  - License data: Uses cached data if customer file exists (any age), fetches if customer not found
+  - IS Usage data: Uses cached data if < 7 days old, fetches from Snowflake if older or customer not found
+  - Support tickets: Uses cached data if < 24 hours old, fetches if older or customer not found
 - **IS API Licensing (CRITICAL)**: IS Poller calls do NOT count toward licensed API capacity. Only non-poller originators (Robot, Studio, Connections, Studio Web, etc.) are billable. Always exclude poller volume when assessing API overages.
+- **Web search (REQUIRED)**: Always perform web search to gather customer context and incorporate findings into recommendations
 - Requires authentication to both Snowflake and Salesforce (only when fetching new data)
 - Profile generation may take 2-5 minutes when parsing large license files locally
 - Profile generation with fresh data fetch may take longer if API calls are required
-- Action items should be specific, data-driven, and prioritized by revenue impact
+- Action items should be specific, data-driven, aligned with customer strategy, and prioritized by revenue impact

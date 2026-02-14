@@ -22,7 +22,7 @@ A Product Manager assistant toolkit for analyzing UiPath customer data. Aggregat
 ### 1. Clone and Configure
 
 ```bash
-cd ~/Documents/pm-assistant
+cd ~/Documents/uipath-integration-analyst
 ```
 
 ### 2. Set Up Environment Variables
@@ -71,7 +71,7 @@ pip install simple-salesforce
 If using Claude Code, create a symlink to make skills discoverable:
 
 ```bash
-ln -s ~/Documents/pm-assistant/skills ~/.claude/skills
+ln -s ~/Documents/uipath-integration-analyst/skills ~/.claude/skills
 ```
 
 ## Usage
@@ -117,7 +117,7 @@ All data is cached locally to minimize authentication requests:
 ## Project Structure
 
 ```
-pm-assistant/
+uipath-integration-analyst/
 ├── .env.example              # Environment configuration template
 ├── .gitignore                # Git ignore rules
 ├── README.md                 # This file

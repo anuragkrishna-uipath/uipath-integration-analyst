@@ -38,11 +38,11 @@ fi
 timestamp=$(date +%Y%m%d_%H%M%S)
 
 # Create snowflake-data directory if it doesn't exist
-mkdir -p ~/Documents/pm-assistant/snowflake-data
+mkdir -p ~/Documents/uipath-integration-analyst/snowflake-data
 
 # Build output filename with subsidiary slug
 subsidiary_slug=$(echo "$subsidiary_name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr ',' '_' | tr -d '.')
-output_file=~/Documents/pm-assistant/snowflake-data/subsidiary_license_${subsidiary_slug}_${timestamp}.csv
+output_file=~/Documents/uipath-integration-analyst/snowflake-data/subsidiary_license_${subsidiary_slug}_${timestamp}.csv
 
 echo "=========================================="
 echo "Subsidiary License Information"
@@ -52,8 +52,8 @@ echo "User: $username"
 echo "Account: $snowflake_account"
 echo ""
 
-# The SQL query to execute
-QUERY="select * from prod_customer360.customerprofile.CustomerSubsidiaryLicenseProfile where SUBSIDIARYNAME = '$subsidiary_name';"
+# The SQL query to execute (using ILIKE for partial matching, case-insensitive)
+QUERY="select * from prod_customer360.customerprofile.CustomerSubsidiaryLicenseProfile where SUBSIDIARYNAME ILIKE '%$subsidiary_name%';"
 
 # Check if snowsql is available
 if ! command -v snowsql &> /dev/null; then
@@ -97,13 +97,13 @@ if [ $? -eq 0 ]; then
                 echo "📋 Columns retrieved: $col_count"
             fi
         else
-            echo "⚠️  No records found for subsidiary: $subsidiary_name"
-            echo "💡 Tip: Check the subsidiary name spelling or try searching in Salesforce first"
+            echo "⚠️  No records found for subsidiary matching: $subsidiary_name"
+            echo "💡 Tip: Using partial matching (ILIKE). Try a shorter search term or check Salesforce for exact name"
             echo "💾 Results saved to: $output_file"
         fi
     else
-        echo "⚠️  No data returned for subsidiary: $subsidiary_name"
-        echo "💡 Tip: Verify the subsidiary name is correct (case-sensitive)"
+        echo "⚠️  No data returned for subsidiary matching: $subsidiary_name"
+        echo "💡 Tip: Using partial matching (ILIKE). Try different search terms"
         echo "💾 Results saved to: $output_file"
     fi
 else

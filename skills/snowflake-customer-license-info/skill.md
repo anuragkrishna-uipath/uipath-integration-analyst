@@ -3,7 +3,7 @@ name: snowflake-customer-license-info
 description: Pull customer/subsidiary license consumption information from Snowflake
 user-invocable: true
 argument-hint: "[subsidiary_name]"
-allowed-tools: Bash, Read, Write, AskUserQuestion
+allowed-tools: Bash, Read, Write, Glob, AskUserQuestion
 ---
 
 # Snowflake Customer License Information Skill
@@ -20,7 +20,7 @@ Query Snowflake to retrieve license consumption information for a specific custo
 
 ## Instructions
 
-When this skill is invoked, execute the bash script at `~/Documents/pm-assistant/subsidiary-license-info.sh`:
+When this skill is invoked:
 
 1. **Get parameters**:
    - First argument (required): Subsidiary name (e.g., "PepsiCo, Inc", "Microsoft Corporation")
@@ -28,19 +28,32 @@ When this skill is invoked, execute the bash script at `~/Documents/pm-assistant
    - If subsidiary name not provided, ask the user using AskUserQuestion
    - If username not provided and SNOWFLAKE_USER not set, ask the user using AskUserQuestion
 
-2. **Execute the script**:
+2. **Check cache first**:
+   - Look for files in `~/Documents/uipath-integration-analyst/snowflake-data/` matching pattern: `subsidiary_license_<subsidiary_normalized>_*.csv`
+   - Normalize subsidiary name: lowercase, replace spaces/commas/periods with underscores
+   - If cache file exists (any age):
+     - **Validate data exists**: Check if CSV has data rows beyond header (line count > 3, since lines 1-2 are auth output, line 3 is header)
+     - If data validation passes:
+       - Display: "✓ Using cached data from <file>"
+       - Skip to step 4 (display results from cache)
+     - If data validation fails (no data rows):
+       - Display: "⚠️ Cached file is empty, querying fresh data..."
+       - Proceed to step 3
+   - Otherwise, proceed to step 3
+
+3. **Execute the script**:
    ```bash
-   bash ~/Documents/pm-assistant/subsidiary-license-info.sh "<subsidiary_name>" "<username>"
+   bash ~/Documents/uipath-integration-analyst/subsidiary-license-info.sh "<subsidiary_name>" "<username>"
    ```
    Examples:
    ```bash
-   bash ~/Documents/pm-assistant/subsidiary-license-info.sh "PepsiCo, Inc" "your.email@company.com"
-   bash ~/Documents/pm-assistant/subsidiary-license-info.sh "Microsoft Corporation"
+   bash ~/Documents/uipath-integration-analyst/subsidiary-license-info.sh "PepsiCo, Inc" "your.email@company.com"
+   bash ~/Documents/uipath-integration-analyst/subsidiary-license-info.sh "Microsoft Corporation"
    ```
 
-3. **Display results**:
+4. **Display results**:
    - The script will output a summary with total records found
-   - The script saves detailed CSV results to `~/Documents/pm-assistant/snowflake-data/subsidiary_license_<subsidiary_slug>_<timestamp>.csv`
+   - The script saves detailed CSV results to `~/Documents/uipath-integration-analyst/snowflake-data/subsidiary_license_<subsidiary_slug>_<timestamp>.csv`
    - After the script completes, read the CSV file and create a formatted table showing:
      - Subsidiary Name
      - Product/SKU information
@@ -49,7 +62,7 @@ When this skill is invoked, execute the bash script at `~/Documents/pm-assistant
      - Subscription details
      - Any relevant license metrics
 
-4. **Handle errors**:
+5. **Handle errors**:
    - If the script fails (exit code != 0), inform the user about authentication issues
    - Suggest running: `snowsql -a UIPATH-UIPATH_OBSERVABILITY -u <username> --authenticator externalbrowser`
    - If no results found, inform the user and suggest checking the subsidiary name spelling
@@ -58,8 +71,9 @@ When this skill is invoked, execute the bash script at `~/Documents/pm-assistant
 
 The query retrieves all columns from CustomerSubsidiaryLicenseProfile for the specified subsidiary:
 - **Source**: Customer360 database, customer profile schema
-- **Filter**: SUBSIDIARYNAME = '<subsidiary_name>'
-- **Scope**: All license consumption data for that subsidiary
+- **Filter**: SUBSIDIARYNAME ILIKE '%<subsidiary_name>%' (partial, case-insensitive matching)
+- **Limit**: None (retrieves all matching records)
+- **Scope**: All license consumption data for matching subsidiaries
 - **Use Case**: Understanding customer license usage, allocation, and consumption patterns
 
 ## Example Usage
@@ -73,8 +87,9 @@ The query retrieves all columns from CustomerSubsidiaryLicenseProfile for the sp
 ## Notes
 - Requires SnowSQL CLI to be installed
 - Requires active SSO authentication to Snowflake
-- Results are saved in ~/Documents/pm-assistant/snowflake-data/ directory with timestamp
+- Results are saved in ~/Documents/uipath-integration-analyst/snowflake-data/ directory with timestamp
 - Query is read-only and does not modify any data
-- Subsidiary name must match exactly (case-sensitive)
+- **Uses partial matching (ILIKE)**: Query matches any subsidiary name containing the search term (case-insensitive)
 - Use quotes around subsidiary names with spaces or special characters
-- If unsure of exact subsidiary name, try partial matches or check Salesforce first
+- For ambiguous names (e.g., "T-Mobile" matches "T-Mobile USA, Inc", "T-Mobile Polska"), results may include multiple subsidiaries
+- No record limit - retrieves all matching records (large customers may return thousands of records)

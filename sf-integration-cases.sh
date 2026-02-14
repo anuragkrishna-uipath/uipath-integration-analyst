@@ -15,14 +15,14 @@ timestamp=$(date +%Y%m%d_%H%M%S)
 sf_org=${SALESFORCE_ORG_ALIAS:-"uipath"}
 
 # Create is-cases directory if it doesn't exist
-mkdir -p ~/Documents/pm-assistant/is-cases
+mkdir -p ~/Documents/uipath-integration-analyst/is-cases
 
 # Build output filename
 if [ -n "$customer_name" ]; then
     customer_slug=$(echo "$customer_name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
-    output_file=~/Documents/pm-assistant/is-cases/sf_integration_cases_${days}days_${customer_slug}_${timestamp}.json
+    output_file=~/Documents/uipath-integration-analyst/is-cases/sf_integration_cases_${days}days_${customer_slug}_${timestamp}.json
 else
-    output_file=~/Documents/pm-assistant/is-cases/sf_integration_cases_${days}days_${timestamp}.json
+    output_file=~/Documents/uipath-integration-analyst/is-cases/sf_integration_cases_${days}days_${timestamp}.json
 fi
 
 echo "=========================================="
