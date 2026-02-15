@@ -4,25 +4,31 @@
 # Usage: ./sf-integration-cases.sh [days] [customer_name]
 # Default: 7 days, all customers
 
-# Load environment variables from .env file if it exists
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+# Get script directory and load .env file from parent directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+if [ -f "$PARENT_DIR/.env" ]; then
+    export $(grep -v '^#' "$PARENT_DIR/.env" | xargs)
 fi
 
 days=${1:-7}
 customer_name=$2
 timestamp=$(date +%Y%m%d_%H%M%S)
 sf_org=${SALESFORCE_ORG_ALIAS:-"uipath"}
+project_dir=${PROJECT_DIR:-$SCRIPT_DIR}
+
+# Expand tilde in project_dir
+project_dir="${project_dir/#\~/$HOME}"
 
 # Create is-cases directory if it doesn't exist
-mkdir -p ~/Documents/uipath-integration-analyst/is-cases
+mkdir -p "$project_dir/is-cases"
 
 # Build output filename
 if [ -n "$customer_name" ]; then
     customer_slug=$(echo "$customer_name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
-    output_file=~/Documents/uipath-integration-analyst/is-cases/sf_integration_cases_${days}days_${customer_slug}_${timestamp}.json
+    output_file="$project_dir/is-cases/sf_integration_cases_${days}days_${customer_slug}_${timestamp}.json"
 else
-    output_file=~/Documents/uipath-integration-analyst/is-cases/sf_integration_cases_${days}days_${timestamp}.json
+    output_file="$project_dir/is-cases/sf_integration_cases_${days}days_${timestamp}.json"
 fi
 
 echo "=========================================="

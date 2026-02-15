@@ -26,38 +26,37 @@ This is a Product Manager assistant toolkit for analyzing UiPath customer data. 
    - Skills are invoked with `/skill-name` syntax
    - Primary skill: `/customer-profile` - aggregates all data sources into actionable customer profile
 
+## Environment Configuration
+
+All configuration is managed through the `.env` file in the project root. Required variables:
+
+```bash
+# Project Configuration
+PROJECT_DIR=~/Documents/uipath-integration-analyst  # Base directory for all data storage
+
+# Snowflake Configuration
+SNOWFLAKE_ACCOUNT=UIPATH-UIPATH_OBSERVABILITY
+SNOWFLAKE_USER=your.email@company.com
+
+# Salesforce Configuration
+SALESFORCE_INSTANCE_URL=https://uipath.my.salesforce.com
+SALESFORCE_ORG_ALIAS=uipath
+```
+
 ### Authentication Requirements
 
 **Snowflake**: Uses `snowsql` CLI with SSO via `--authenticator externalbrowser`
-- Account: `UIPATH-UIPATH_OBSERVABILITY`
-- Database: `prod_customer360.customerprofile`
-- User must pass email as parameter (e.g., `anurag.krishna@uipath.com`)
+- Account and user are read from .env file
+- Database: `prod_customer360.customerprofile` and `PROD_ELEMENTSERVICE`
+- First run requires browser authentication, subsequent runs use cached session
 
 **Salesforce**: Uses `sf` CLI (Salesforce CLI v2)
-- Target org: `--target-org uipath`
-- Instance: `https://uipath.my.salesforce.com`
+- Target org configured via .env (SALESFORCE_ORG_ALIAS)
+- Instance URL configured via .env (SALESFORCE_INSTANCE_URL)
+- First run: `sf org login web --instance-url ${SALESFORCE_INSTANCE_URL} --alias ${SALESFORCE_ORG_ALIAS}`
 - Python fallback script (`fetch_salesforce_cases.py`) supports multiple auth methods
 
-## Key Commands
-
-### Data Fetching
-
-```bash
-# Fetch customer license data from Snowflake
-./subsidiary-license-info.sh "Customer Name" "your.email@uipath.com"
-
-# Fetch support tickets for a customer (last 180 days)
-./sf-integration-cases.sh 180 "Customer Name"
-
-# Fetch Integration Service API usage (last 3 months)
-# Query all customers
-./snowflake-is-usage.sh "your.email@uipath.com"
-
-# Query specific customer (checks cache first, queries if not found)
-./snowflake-is-usage.sh "Customer Name" "your.email@uipath.com"
-```
-
-### Skills
+## Skills Usage
 
 ```bash
 # Generate comprehensive customer profile (includes web search automatically)
@@ -69,96 +68,78 @@ This is a Product Manager assistant toolkit for analyzing UiPath customer data. 
 # Pull Salesforce Integration Service cases
 /sf-integration-cases 180 "Customer Name"
 
-# Query Snowflake license info
+# Query Snowflake license info (username from .env)
 /snowflake-customer-license-info "Customer Name"
 
-# Query Snowflake IS usage (checks cache for customer, queries if not found)
-/snowflake-is-usage "Customer Name" your.email@uipath.com
-/snowflake-is-usage your.email@uipath.com
+# Query Snowflake IS usage (username from .env, checks cache for customer, queries if not found)
+/snowflake-is-usage "Customer Name"
+/snowflake-is-usage  # All customers
 ```
 
-## Critical Business Logic
+## Caching Strategy
 
-### IS API Licensing Rules (IMPORTANT)
+All data-fetching skills implement intelligent caching with data validation to minimize authentication flows. For detailed caching logic and data parsing patterns, refer to individual skill documentation:
 
-When analyzing Integration Service API usage, **IS Poller calls DO NOT count toward API licensing limits**. Only non-poller originators are billable:
-- **Billable**: Robot, Studio, Studio Web, Connections, Maestro, Agents, Autopilot, etc.
-- **NOT billable**: IS Pollers, IS Internal Chained Calls
+- **ARR data**: Manual cache management - use if < 7 days old
+- **License data**: See `/snowflake-customer-license-info` skill - uses cache if customer file exists with data (any age)
+- **IS Usage data**: See `/snowflake-is-usage` skill - uses cache if < 7 days old and contains data rows
+- **Support tickets**: See `/sf-integration-cases` skill - uses cache if < 24 hours old and has records
 
-When calculating API capacity utilization:
-1. Sum all API calls by originator from ARR data
-2. Exclude IS Poller volume from billable calculation
-3. Compare billable calls against licensed API capacity
-4. High poller usage (>90%) is an efficiency concern, NOT a licensing issue
-
-### Data Parsing Patterns
-
-**License CSV files** (from Snowflake):
-- Skip first 2 lines (auth output), header starts at line 3
-- Column 0: `MONTH` (format: YYYY-MM-DD)
-- Column 49: `PRODUCTORSERVICENAME`
-- Column 50: `PRODUCTORSERVICEQUANTITY`
-- Always use latest month data (sort and take max date)
-- Files may be large (6MB+, 6000+ rows) - use Python csv module for parsing
-
-**ARR CSV files**:
-- Format: `NAME,GROUPEDORIGINATOR,APIUSAGE,ARR,Ticket Count`
-- API usage numbers appear to be annual totals
-- Multiple rows per customer (one per originator type)
-
-**Support Ticket JSON files**:
-- Structure: `{result: {records: [...], totalSize: N}}`
-- Each record has: `Status`, `Priority`, `Subject`, `Description`, `Solution__c`, etc.
-
-### Caching Strategy
-
-The customer-profile skill implements intelligent caching with data validation to minimize authentication flows:
-- **ARR data**: Check `~/Documents/uipath-integration-analyst/arr/` - use if < 7 days old
-- **License data**: Check `~/Documents/uipath-integration-analyst/snowflake-data/` - use if customer-specific file exists AND contains data rows (any age)
-- **IS Usage data**: Check `~/Documents/uipath-integration-analyst/snowflake-data/` - use if customer-specific file exists AND < 7 days old AND contains data rows (pattern: `snowflake_is_usage_*<customer_name>*.csv`)
-- **Support tickets**: Check `~/Documents/uipath-integration-analyst/is-cases/` - use if < 24 hours old AND contains records (totalSize > 0)
-
-**Data Validation**: All skills validate cached files contain actual data before using them. Empty cache files (no data rows/records) trigger fresh queries automatically. This prevents false positives from empty result files caused by query failures or missing data.
+**Key Principle**: All skills validate cached files contain actual data before using them. Empty cache files trigger fresh queries automatically.
 
 ## File Organization
 
 ```
-uipath-integration-analyst/
+${PROJECT_DIR}/                   # Base directory (configurable via .env)
 ├── arr/                          # ARR and API usage data (CSV)
 ├── snowflake-data/               # License consumption data (CSV)
 ├── is-cases/                     # Support tickets (JSON)
-├── skills/                       # Claude skills
+├── sql/                          # SQL query files (modular)
+│   ├── subsidiary_license_query.sql       # License consumption query
+│   ├── is_usage_query_with_customer.sql   # IS usage with customer filter
+│   └── is_usage_query_all.sql             # IS usage all customers
+├── skills/                       # Claude skills (if using local skills)
 │   ├── customer-profile/         # Main customer profiling skill
 │   ├── sf-integration-cases/     # Salesforce case fetching
 │   ├── customer-in-news/         # Web search for customer news
 │   ├── snowflake-customer-license-info/
 │   └── snowflake-is-usage/
-├── subsidiary-license-info.sh    # Snowflake license query
-├── sf-integration-cases.sh       # Salesforce case query
-├── snowflake-is-usage.sh         # Snowflake API usage query
+├── subsidiary-license-info.sh    # Snowflake license query script
+├── sf-integration-cases.sh       # Salesforce case query script
+├── snowflake-is-usage.sh         # Snowflake API usage query script
 ├── fetch_salesforce_cases.py     # Python Salesforce client
 ├── .env                          # Configuration (not in repo)
 └── venv/                         # Python virtual environment
 ```
 
-## Data Sources
+**Note**:
+- All data storage paths are relative to ${PROJECT_DIR} configured in .env
+- Scripts automatically expand ~ to user home directory
+- SQL queries are maintained separately in `sql/` directory for better modularity and version control
 
-**Primary Table: Snowflake `prod_customer360.customerprofile.CustomerSubsidiaryLicenseProfile`**
-- Contains license consumption by month, customer, subsidiary, product
-- 63 columns including account metadata, license details, usage metrics (MAU/MEU)
-- Query by `SUBSIDIARYNAME ILIKE '%Customer Name%'` (partial, case-insensitive matching)
-- No record limit - retrieves all matching records for complete customer view
+## Data Sources Overview
 
-**Salesforce Cases**
-- Filter: `Deployment_Type_Product_Component__c LIKE '%Integration Service%'`
-- Date range: `CreatedDate = LAST_N_DAYS:N`
-- Key fields: `Status`, `Priority`, `Subject`, `Description`, `Solution__c`
+This project integrates data from three primary sources:
 
-**Snowflake IS Usage Telemetry**
-- Source: `PROD_ELEMENTSERVICE.APPINS.INTEGRATIONSERVICE_TELEMETRY_STANDARDIZED`
-- Filter: `s.name ILIKE '%Customer Name%'` (partial, case-insensitive matching)
-- Time range: Last 3 months
-- Limited to 500 records per query
+1. **Snowflake** - Customer license consumption and usage data
+   - Account: Configured in .env (SNOWFLAKE_ACCOUNT)
+   - User: Configured in .env (SNOWFLAKE_USER)
+   - License data: `prod_customer360.customerprofile.CustomerSubsidiaryLicenseProfile`
+   - IS telemetry: `PROD_ELEMENTSERVICE.APPINS.INTEGRATIONSERVICE_TELEMETRY_STANDARDIZED`
+   - See: `/snowflake-customer-license-info` and `/snowflake-is-usage` skills for details
+
+2. **Salesforce** - Support cases and customer issues
+   - Instance: Configured in .env (SALESFORCE_INSTANCE_URL)
+   - Org: Configured in .env (SALESFORCE_ORG_ALIAS)
+   - Case object with Integration Service product component filter
+   - See: `/sf-integration-cases` skill for details
+
+3. **ARR Data (Local CSV files)** - Annual Recurring Revenue and API usage metrics
+   - Stored in: `${PROJECT_DIR}/arr/`
+   - Format: Customer name, originator, API usage, ARR bucket, ticket count
+   - See: `/customer-profile` skill for parsing logic
+
+For detailed query specifications, table schemas, and data parsing patterns, refer to individual skill documentation.
 
 ## Environment Setup
 
@@ -170,21 +151,13 @@ pip install simple-salesforce  # Required for fetch_salesforce_cases.py
 
 The `.env` file contains Salesforce configuration but NOT credentials (SSO-based auth).
 
-## Output Format Standards
+## Communication Style
 
-When generating customer profiles:
-1. Use consolidated markdown tables with Category column
-2. Include 4 sections: Account, Licenses, IS Usage, Support
-3. Follow each section with **Insight:** commentary (1-2 sentences)
-4. **Always perform web search** for customer context using `/customer-in-news` skill
-5. Generate 3-5 data-driven Action Items prioritized by revenue impact and aligned with customer's strategic initiatives
-6. Incorporate web search findings into recommendations
-7. Keep use cases general (avoid connector-specific recommendations)
-8. Include metadata footer with data source dates
+- **Be precise and data-driven**: All responses must include specific data, metrics, and quantifiable information
+- Avoid vague statements like "might", "could", "possibly" without data to support them
+- When analyzing customer data, always cite specific numbers, percentages, and trends
+- If data is unavailable, explicitly state what's missing rather than making general statements
 
- ## Communication Style
+---
 
-  - **Be precise and data-driven**: All responses must include specific data, metrics, and quantifiable information
-  - Avoid vague statements like "might", "could", "possibly" without data to support them
-  - When analyzing customer data, always cite specific numbers, percentages, and trends
-  - If data is unavailable, explicitly state what's missing rather than making general statements
+**Note**: For detailed instructions on data parsing, output formatting, and business logic (e.g., IS API licensing rules), refer to individual skill documentation in the `skills/` directory.

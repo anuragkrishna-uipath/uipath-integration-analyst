@@ -1,48 +1,56 @@
 #!/bin/bash
 
 # Snowflake Subsidiary License Information Query Script
-# Usage: ./subsidiary-license-info.sh <subsidiary_name> [username]
+# Usage: ./subsidiary-license-info.sh <subsidiary_name>
 
-# Load environment variables from .env file if it exists
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
+# Get script directory and load .env file from parent directory
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+if [ -f "$PARENT_DIR/.env" ]; then
+    export $(grep -v '^#' "$PARENT_DIR/.env" | xargs)
 fi
 
 # Get parameters
 subsidiary_name=$1
-username=${2:-$SNOWFLAKE_USER}
+username=${SNOWFLAKE_USER}
 snowflake_account=${SNOWFLAKE_ACCOUNT:-"UIPATH-UIPATH_OBSERVABILITY"}
+project_dir=${PROJECT_DIR:-$SCRIPT_DIR}
+
+# Expand tilde in project_dir
+project_dir="${project_dir/#\~/$HOME}"
 
 # Validate inputs
 if [ -z "$subsidiary_name" ]; then
     echo "❌ Error: Subsidiary name is required"
     echo ""
-    echo "Usage: ./subsidiary-license-info.sh <subsidiary_name> [username]"
+    echo "Usage: ./subsidiary-license-info.sh <subsidiary_name>"
     echo ""
     echo "Examples:"
-    echo "  ./subsidiary-license-info.sh \"PepsiCo, Inc\" your.email@company.com"
+    echo "  ./subsidiary-license-info.sh \"PepsiCo, Inc\""
     echo "  ./subsidiary-license-info.sh \"Microsoft Corporation\""
+    echo ""
+    echo "Configuration: Set SNOWFLAKE_USER in .env file"
     exit 1
 fi
 
 if [ -z "$username" ]; then
-    echo "❌ Error: Snowflake username required"
+    echo "❌ Error: Snowflake username not configured"
     echo ""
-    echo "Usage: ./subsidiary-license-info.sh <subsidiary_name> <username>"
-    echo "   OR: export SNOWFLAKE_USER=<username> && ./subsidiary-license-info.sh <subsidiary_name>"
+    echo "Please set SNOWFLAKE_USER in .env file:"
+    echo "  SNOWFLAKE_USER=your.email@company.com"
     echo ""
-    echo "Example: ./subsidiary-license-info.sh \"PepsiCo, Inc\" your.email@company.com"
+    echo "Current .env location: $SCRIPT_DIR/.env"
     exit 1
 fi
 
 timestamp=$(date +%Y%m%d_%H%M%S)
 
 # Create snowflake-data directory if it doesn't exist
-mkdir -p ~/Documents/uipath-integration-analyst/snowflake-data
+mkdir -p "$project_dir/snowflake-data"
 
 # Build output filename with subsidiary slug
 subsidiary_slug=$(echo "$subsidiary_name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_' | tr ',' '_' | tr -d '.')
-output_file=~/Documents/uipath-integration-analyst/snowflake-data/subsidiary_license_${subsidiary_slug}_${timestamp}.csv
+output_file="$project_dir/snowflake-data/subsidiary_license_${subsidiary_slug}_${timestamp}.csv"
 
 echo "=========================================="
 echo "Subsidiary License Information"
@@ -52,8 +60,15 @@ echo "User: $username"
 echo "Account: $snowflake_account"
 echo ""
 
-# The SQL query to execute (using ILIKE for partial matching, case-insensitive)
-QUERY="select * from prod_customer360.customerprofile.CustomerSubsidiaryLicenseProfile where SUBSIDIARYNAME ILIKE '%$subsidiary_name%';"
+# Load SQL query from file and substitute parameter
+SQL_FILE="$PARENT_DIR/sql/subsidiary_license_query.sql"
+if [ ! -f "$SQL_FILE" ]; then
+    echo "❌ SQL file not found: $SQL_FILE"
+    exit 1
+fi
+
+# Read SQL and replace parameter
+QUERY=$(cat "$SQL_FILE" | sed "s/{SUBSIDIARY_NAME}/$subsidiary_name/g")
 
 # Check if snowsql is available
 if ! command -v snowsql &> /dev/null; then

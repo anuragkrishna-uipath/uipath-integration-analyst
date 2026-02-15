@@ -21,7 +21,7 @@ This skill provides a 360-degree view of a customer by aggregating:
 
 ## Data Sources
 
-1. **ARR Data**: `~/Documents/uipath-integration-analyst/arr/` folder (Excel/CSV files)
+1. **ARR Data**: `${PROJECT_DIR}/arr/` folder (Excel/CSV files)
 2. **License Consumption**: Snowflake CustomerSubsidiaryLicenseProfile
 3. **IS Usage**: Snowflake Integration Service telemetry (last 3 months)
 4. **Support Tickets**: Salesforce cases (last 6 months)
@@ -38,14 +38,14 @@ When this skill is invoked:
 ### 2. Data Collection Strategy
 
 All data gathering is delegated to specialized skills that handle caching automatically:
-- **ARR Data**: Read directly from `~/Documents/uipath-integration-analyst/arr/` (7-day cache)
+- **ARR Data**: Read directly from `${PROJECT_DIR}/arr/` (7-day cache)
 - **License Data**: Handled by `/snowflake-customer-license-info` skill (uses cached if exists)
 - **IS Usage Data**: Handled by `/snowflake-is-usage` skill (7-day cache)
 - **Support Tickets**: Handled by `/sf-integration-cases` skill (24-hour cache)
 - **Customer News**: Handled by `/customer-in-news` skill (real-time web search)
 
 ### 3. Gather ARR Data
-- Search for ARR data in `~/Documents/uipath-integration-analyst/arr/` folder
+- Search for ARR data in `${PROJECT_DIR}/arr/` folder
 - Look for most recent CSV file (check modification date)
 - Search for customer name in the file using Grep
 - Extract: ARR bucket, region, account owner, CSM, ticket count
@@ -53,7 +53,7 @@ All data gathering is delegated to specialized skills that handle caching automa
 ### 4. Gather License Consumption Data
 - Invoke the `/snowflake-customer-license-info` skill with customer name
 - The skill will handle caching automatically (uses cached data if customer file exists)
-- After skill completes, read the cached CSV file from `~/Documents/uipath-integration-analyst/snowflake-data/`
+- After skill completes, read the cached CSV file from `${PROJECT_DIR}/snowflake-data/`
 - Extract latest month data:
   - Total licenses by product type
   - Key products (Studio, StudioX, robots, DU units, AI units, API calls)
@@ -62,9 +62,10 @@ All data gathering is delegated to specialized skills that handle caching automa
 ### 5. Gather Integration Service Usage
 
 **Invoke the skill:**
-- Invoke the `/snowflake-is-usage` skill with customer name and username
+- Invoke the `/snowflake-is-usage` skill with customer name only
+- The skill reads SNOWFLAKE_USER from .env file automatically
 - The skill will handle caching automatically (7-day cache, fetches if expired or customer not found)
-- After skill completes, read the cached CSV file from `~/Documents/uipath-integration-analyst/snowflake-data/`
+- After skill completes, read the cached CSV file from `${PROJECT_DIR}/snowflake-data/`
 
 **Extract from data:**
 - Total API calls
@@ -81,7 +82,7 @@ All data gathering is delegated to specialized skills that handle caching automa
 ### 6. Gather Support Tickets (Last 6 Months)
 - Invoke the `/sf-integration-cases` skill with 180 days and customer name
 - The skill will handle caching automatically (24-hour cache, fetches if expired or customer not found)
-- After skill completes, read the cached JSON file from `~/Documents/uipath-integration-analyst/is-cases/`
+- After skill completes, read the cached JSON file from `${PROJECT_DIR}/is-cases/`
 - Extract:
   - Total tickets
   - Open vs closed tickets
@@ -98,73 +99,43 @@ All data gathering is delegated to specialized skills that handle caching automa
 
 ### 8. Format Output
 
-Present data in a single consolidated table with insights after each section, followed by action items:
+Present data in TWO consolidated tables: one for customer data with insights, and one for action items.
 
 ```markdown
 # Customer Profile: <Customer Name>
 
-| Category | Metric | Value |
-|----------|--------|-------|
-| **Account** | Customer Name | <Name> |
-| | Primary Use Case | <Derived from usage patterns> |
-| | ARR Bucket | <Bucket> (e.g., $3M-5M) |
-| | Region | <Region> |
-| | Account Owner | <Name> |
-| | CSM | <Name> |
+## Customer Data
 
-**Account Insight:** <1-2 sentences about customer profile, maturity, deployment scale>
-
-| **Licenses (Q)** | Studio | <qty> |
-| | StudioX | <qty> |
-| | Assistant | <qty> |
-| | Robot Units | <qty> |
-| | DU Units | <qty> |
-| | AI Units | <qty> |
-| | API Calls (licensed) | <qty> |
-
-**License Insight:** <1-2 sentences about license mix, deployment strategy, key products>
-
-| **IS Usage (3mo)** | Total API Calls | <qty> (e.g., 3.4B) |
-| | Primary Originator | <Type> (<pct>%, e.g., IS Pollers 98.9%) |
-| | Billable API Calls | <qty non-poller calls> |
-| | Licensed API Capacity | <qty from license data> |
-| | Integration Pattern | <Pattern> (e.g., Polling-based) |
-
-**IS Usage Insight:** <1-2 sentences about usage patterns, optimization opportunities. IMPORTANT: Note that IS Poller calls don't count toward licensing - only assess overage for non-poller calls vs licensed capacity>
-
-| **Support (6mo)** | Total Tickets | <count> |
-| | Open Tickets | <count> |
-| | Priority Distribution | <summary> (e.g., 11 Medium) |
-| | Top Issue Theme | <theme> (<count> tickets) |
-
-**Support Insight:** <1-2 sentences about support health, common issues, customer experience>
-
----
+| Category | Data | Insights |
+|----------|------|----------|
+| **Account** | Customer Name: <Name> • Primary Use Case: <Use case> • ARR Bucket: <Bucket> • Region: <Region> • Account Owner: <Name> • CSM: <Name> | <1-2 sentences about customer profile, maturity, deployment scale> |
+| **Licenses (Q1 2026)** | API Calls (licensed): <qty> • Task Capture: <qty> • AI Units: <qty> • Robot Units: <qty> • Data Service: <qty> • Action Center: <qty> • Assistant: <qty> • Apps: <qty> • DU Units: <qty> • StudioX: <qty> • Studio: <qty> • Unattended Robot: <qty> • Test Robot: <qty> | <1-2 sentences about license mix, deployment strategy, key products> |
+| **IS Usage (3mo)** | Total API Calls: <qty> • Billable API Calls: <qty non-poller> • Licensed API Capacity: <qty> • **Capacity Utilization: <X>x over/under licensed capacity** • Primary Originator: <Type> (<pct>%) • Top Connector: <Name> (<pct>%) • Secondary Connectors: <Names> • Integration Pattern: <Pattern> • IS Pollers: <pct>% (non-billable) | <1-2 sentences about usage patterns, optimization opportunities. IMPORTANT: Note that IS Poller calls don't count toward licensing - only assess overage for non-poller calls vs licensed capacity> |
+| **Support (180 days)** | Total Tickets: <count> • Open Tickets: <count> • Priority Distribution: <summary> • Top Issue Theme: <theme> | <1-2 sentences about support health, common issues, customer experience> |
+| **Customer News** | <Recent news headlines with key metrics> • <Strategic initiatives> • <Financial/operational updates> | <1-2 sentences about customer strategic direction and alignment opportunities> • **Sources:** [Source 1](URL1) \| [Source 2](URL2) \| [Source 3](URL3) |
 
 ## Action Items
 
-1. **<Category>**: <Specific action based on data>
-   - *Data point*: <Supporting metric>
-   - *Action*: <What to do>
-
-2. **<Category>**: <Specific action based on data>
-   - *Data point*: <Supporting metric>
-   - *Action*: <What to do>
-
-3. **<Category>**: <Specific action based on data>
-   - *Data point*: <Supporting metric>
-   - *Action*: <What to do>
+| Priority | Category | Data Point | Action |
+|----------|----------|------------|--------|
+| **1** | **<Category>** | <Specific metric or observation> | <Detailed action with timeline and stakeholders> |
+| **2** | **<Category>** | <Specific metric or observation> | <Detailed action with timeline and stakeholders> |
+| **3** | **<Category>** | <Specific metric or observation> | <Detailed action with timeline and stakeholders> |
+| **4** | **<Category>** | <Specific metric or observation> | <Detailed action with timeline and stakeholders> |
+| **5** | **<Category>** | <Specific metric or observation> | <Detailed action with timeline and stakeholders> |
 
 ---
-*Profile generated: <Timestamp> | Data sources: ARR (<file_date>), Licenses (<file_date>), Tickets (<file_date>)*
+*Profile generated: <Timestamp> | Data sources: ARR (<file_date>), Licenses (<file_date>), IS Usage (<date_range>), Support Tickets (<date_range>)*
 ```
 
 **Formatting Guidelines:**
-- Merge related metrics into single table with Category column
-- Keep licenses concise - only show key products with quantities
-- For IS Usage, focus on top 2 originators and overall pattern
-- For Support, summarize themes rather than listing individual tickets
-- Action items should be 3-5 items maximum, prioritized by impact
+- Use TWO tables: (1) Customer Data with Category/Data/Insights columns, (2) Action Items with Priority/Category/Data Point/Action columns
+- In the Data column, separate each metric with bullet point (•) and space - do NOT use line breaks or `<br>` tags
+- Keep license data comprehensive but concise - show top 10-15 products by quantity
+- For IS Usage, always calculate and display capacity utilization (billable calls vs licensed capacity)
+- For Customer News, include 2-3 key headlines with metrics, then provide insight with source links
+- Action items should be 3-5 items maximum, prioritized by revenue impact
+- Always include source citations for customer news at the end of insights
 
 ### 9. Generate Action Items
 
@@ -220,8 +191,35 @@ Infer primary use case from usage patterns (KEEP IT GENERAL - avoid specific con
 - If customer not found in any system: Provide partial profile with available data
 - Always provide action items even with incomplete data
 
+## Data Parsing Patterns
+
+### ARR CSV Files
+- Format: `NAME,GROUPEDORIGINATOR,APIUSAGE,ARR,Ticket Count`
+- API usage numbers are annual totals
+- Multiple rows per customer (one per originator type)
+- Use Grep to search for customer name in the most recent CSV file in `${PROJECT_DIR}/arr/`
+
+### License CSV Files
+- Skip first 2 lines (auth output), header starts at line 3
+- Key columns: `MONTH` (YYYY-MM-DD), `PRODUCTORSERVICENAME`, `PRODUCTORSERVICEQUANTITY`
+- Always use latest month data (sort by MONTH and take max date)
+- Files may be large (1-6MB, 2000-6000 rows) - use Python csv module for parsing
+- Use `python3` to parse and aggregate by product
+
+### IS Usage CSV Files
+- Skip first 2 lines (auth output), header starts at line 3
+- Columns: `NAME`, `CONNECTORKEY`, `GROUPEDORIGINATOR`, `APIUSAGE`
+- Aggregate by originator to calculate billable vs non-billable usage
+- **Calculate billable calls**: Total API calls minus IS Pollers and IS Internal Chained Calls
+
+### Support Ticket JSON Files
+- Structure: `{result: {records: [...], totalSize: N}}`
+- Each record has: `Status`, `Priority`, `Subject`, `Description`, `Solution__c`, `Account.Name`, `Owner.Name`
+- Check `result.totalSize` to validate data exists before parsing
+
 ## Notes
 
+- **Configuration**: Requires PROJECT_DIR, SNOWFLAKE_USER, SNOWFLAKE_ACCOUNT in .env file
 - **Caching behavior**: Automatically uses cached data when available to reduce API calls
   - ARR data: Uses cached data if < 7 days old, fetches if older or not found
   - License data: Uses cached data if customer file exists (any age), fetches if customer not found
