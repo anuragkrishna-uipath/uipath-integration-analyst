@@ -21,7 +21,7 @@ This is a Product Manager assistant toolkit for analyzing UiPath customer data. 
    - `~/Documents/uipath-integration-analyst/snowflake-data/` - License consumption CSV files (cached per customer)
    - `~/Documents/uipath-integration-analyst/is-cases/` - Support ticket JSON files (cached 24 hours)
 
-3. **Claude Skills** (in `skills/` directory)
+3. **Claude Skills** (in `.claude/skills/` directory)
    - Each skill has a `skill.md` file defining its behavior
    - Skills are invoked with `/skill-name` syntax
    - Primary skill: `/customer-profile` - aggregates all data sources into actionable customer profile
@@ -98,12 +98,13 @@ ${PROJECT_DIR}/                   # Base directory (configurable via .env)
 │   ├── subsidiary_license_query.sql       # License consumption query
 │   ├── is_usage_query_with_customer.sql   # IS usage with customer filter
 │   └── is_usage_query_all.sql             # IS usage all customers
-├── skills/                       # Claude skills (if using local skills)
-│   ├── customer-profile/         # Main customer profiling skill
-│   ├── sf-integration-cases/     # Salesforce case fetching
-│   ├── customer-in-news/         # Web search for customer news
-│   ├── snowflake-customer-license-info/
-│   └── snowflake-is-usage/
+├── .claude/
+│   └── skills/                   # Claude Code skills
+│       ├── customer-profile/     # Main customer profiling skill
+│       ├── sf-integration-cases/ # Salesforce case fetching
+│       ├── customer-in-news/     # Web search for customer news
+│       ├── snowflake-customer-license-info/
+│       └── snowflake-is-usage/
 ├── subsidiary-license-info.sh    # Snowflake license query script
 ├── sf-integration-cases.sh       # Salesforce case query script
 ├── snowflake-is-usage.sh         # Snowflake API usage query script
@@ -160,4 +161,4 @@ The `.env` file contains Salesforce configuration but NOT credentials (SSO-based
 
 ---
 
-**Note**: For detailed instructions on data parsing, output formatting, and business logic (e.g., IS API licensing rules), refer to individual skill documentation in the `skills/` directory.
+**Note**: For detailed instructions on data parsing, output formatting, and business logic (e.g., IS API licensing rules), refer to individual skill documentation in the `.claude/skills/` directory.
