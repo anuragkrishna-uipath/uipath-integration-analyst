@@ -49,9 +49,12 @@ A Intefration assistant toolkit for analyzing UiPath customer data w.r.t integra
    sf org login web --instance-url ${SALESFORCE_INSTANCE_URL} --alias ${SALESFORCE_ORG_ALIAS}
    ```
 
-4. **Link Claude Code skills** (optional but recommended):
+4. **Add ARR data file**:
    ```bash
-   ln -s ${PROJECT_DIR}/skills ~/.claude/skills/uipath-pm
+   # Place your ARR CSV file in the arr/ directory
+   # File should be named: Customer_Connector_Originator_APIUsage_YYYY-MM-DD-HHMM.csv
+   mkdir -p arr
+   # Copy your ARR CSV file to arr/ directory
    ```
 
 5. **Generate your first customer profile**:
@@ -174,38 +177,63 @@ snowsql -a ${SNOWFLAKE_ACCOUNT} -u ${SNOWFLAKE_USER} --authenticator externalbro
 
 Snowflake authentication happens automatically via SSO when running queries - no separate login required.
 
-### 5. Create Data Directories
+### 5. Create Data Directories and Add ARR Data
 
 ```bash
 # Create directories for cached data
 mkdir -p ${PROJECT_DIR}/{arr,snowflake-data,is-cases}
 ```
 
-### 6. Set Up Claude Code Skills (If Using Claude Code)
+**Important - ARR Data Setup**:
+The customer profile skill requires ARR (Annual Recurring Revenue) data to be present in the `arr/` directory:
 
-Link the skills directory so Claude Code can discover them:
+1. **Obtain ARR CSV file** from your internal data source
+2. **File format**: Should contain columns: `NAME,GROUPEDORIGINATOR,APIUSAGE,ARR,Ticket Count`
+3. **Place in arr/ directory**:
+   ```bash
+   # Copy your ARR CSV file to arr/ directory
+   cp /path/to/Customer_Connector_Originator_APIUsage_YYYY-MM-DD-HHMM.csv ${PROJECT_DIR}/arr/
+   ```
+4. **File naming**: Use format `Customer_Connector_Originator_APIUsage_YYYY-MM-DD-HHMM.csv`
+5. **Cache duration**: ARR files are cached for 7 days (use most recent file if < 7 days old)
 
-```bash
-# Option 1: Symlink the entire skills directory (recommended)
-ln -s ${PROJECT_DIR}/skills ~/.claude/skills/uipath-pm
+**Note**: Without ARR data, the customer profile skill will still work but will note "ARR data not available".
 
-# Option 2: Symlink individual skills
-mkdir -p ~/.claude/skills
-ln -s ${PROJECT_DIR}/skills/customer-profile ~/.claude/skills/customer-profile
-ln -s ${PROJECT_DIR}/skills/sf-integration-cases ~/.claude/skills/sf-integration-cases
-ln -s ${PROJECT_DIR}/skills/snowflake-customer-license-info ~/.claude/skills/snowflake-customer-license-info
-ln -s ${PROJECT_DIR}/skills/snowflake-is-usage ~/.claude/skills/snowflake-is-usage
-ln -s ${PROJECT_DIR}/skills/customer-in-news ~/.claude/skills/customer-in-news
-```
+### 6. Verify Claude Code Skills
+
+The skills are included in the repository under `.claude/skills/` and are automatically available when you run Claude Code in the project directory.
 
 Verify skills are available:
 ```bash
-# In Claude Code CLI
-/help
-# You should see the skills listed
+cd ${PROJECT_DIR}
+claude
+# Then run: /help
+# You should see the skills listed: customer-profile, sf-integration-cases, etc.
 ```
 
-### 7. Install Python Dependencies (Optional)
+**Available skills**:
+- `/customer-profile` - Comprehensive customer analysis
+- `/sf-integration-cases` - Pull Salesforce support tickets
+- `/snowflake-customer-license-info` - Query license consumption
+- `/snowflake-is-usage` - Query Integration Service API usage
+- `/customer-in-news` - Search for recent customer news
+
+### 7. Test Your Setup
+
+Run a quick test to verify everything is working:
+
+```bash
+cd ${PROJECT_DIR}
+claude
+
+# In Claude Code, try:
+/customer-in-news "Microsoft"  # Should search web and return news
+
+# Then try a customer profile (if you have ARR data):
+/customer-profile "Your Customer Name"
+```
+
+### 8. Install Python Dependencies (Optional)
 
 Only needed if you want to use the Python Salesforce fallback client:
 
@@ -292,11 +320,23 @@ bash scripts/snowflake-is-usage.sh
 
 All data is cached locally to minimize authentication requests:
 
-- `arr/` - ARR and API usage CSV files (cached 7 days)
-- `snowflake-data/` - License consumption CSV files (cached per customer)
-- `is-cases/` - Support ticket JSON files (cached 24 hours)
+- **`arr/`** - ARR and API usage CSV files
+  - **Source**: Manually placed by user (exported from internal data warehouse)
+  - **Format**: `Customer_Connector_Originator_APIUsage_YYYY-MM-DD-HHMM.csv`
+  - **Required columns**: `NAME,GROUPEDORIGINATOR,APIUSAGE,ARR,Ticket Count`
+  - **Cache duration**: 7 days (use most recent file if < 7 days old)
+  - **Purpose**: Provides ARR bucket, API usage totals, and ticket counts for customer profiles
 
-**Note**: These directories are in `.gitignore` and will not be committed.
+- **`snowflake-data/`** - License consumption and IS usage CSV files (auto-generated)
+  - License files: `subsidiary_license_<customer>_<timestamp>.csv`
+  - IS usage files: `snowflake_is_usage_<timestamp>_<customer>.csv`
+  - Cache duration: License data (no expiry), IS usage (7 days)
+
+- **`is-cases/`** - Support ticket JSON files (auto-generated)
+  - Format: `sf_integration_cases_<days>days_<customer>_<timestamp>.json`
+  - Cache duration: 24 hours
+
+**Note**: These directories are in `.gitignore` and will not be committed to version control.
 
 ## Project Structure
 
@@ -321,18 +361,28 @@ uipath-integration-analyst/
 │   ├── is_usage_query_with_customer.sql # IS usage (customer filter)
 │   └── is_usage_query_all.sql          # IS usage (all customers)
 │
-├── skills/                   # Claude Code interactive skills
-│   ├── customer-profile/     # Comprehensive customer analysis
-│   ├── sf-integration-cases/ # Salesforce case retrieval
-│   ├── customer-in-news/     # Web search for customer news
-│   ├── snowflake-customer-license-info/ # License data retrieval
-│   └── snowflake-is-usage/   # API usage analytics
+├── .claude/
+│   ├── skills/               # Claude Code interactive skills (project-level)
+│   │   ├── customer-profile/     # Comprehensive customer analysis
+│   │   ├── sf-integration-cases/ # Salesforce case retrieval
+│   │   ├── customer-in-news/     # Web search for customer news
+│   │   ├── snowflake-customer-license-info/ # License data retrieval
+│   │   └── snowflake-is-usage/   # API usage analytics
+│   └── settings.local.json   # Claude Code local settings (not in git)
 │
-├── arr/                      # ARR and API usage data (cached, not in git)
-├── snowflake-data/           # License & IS usage CSV files (cached, not in git)
-├── is-cases/                 # Support ticket JSON files (cached, not in git)
+├── arr/                      # ARR data (USER PROVIDED - place CSV files here!)
+│   └── Customer_Connector_Originator_APIUsage_*.csv  # ARR CSV files
+│
+├── snowflake-data/           # License & IS usage CSV files (auto-generated, not in git)
+├── is-cases/                 # Support ticket JSON files (auto-generated, not in git)
 └── venv/                     # Python virtual environment (optional, not in git)
 ```
+
+**Key Directories**:
+- **`arr/`** - **IMPORTANT**: You must manually place ARR CSV files here for customer profiles to work
+- **`scripts/`** - Bash scripts that query Snowflake and Salesforce
+- **`.claude/skills/`** - Claude Code skills (automatically available when running Claude in project directory)
+- **`snowflake-data/`, `is-cases/`** - Auto-generated cache directories (created automatically)
 
 ## Troubleshooting
 
@@ -378,17 +428,18 @@ uipath-integration-analyst/
 - Example: Different variations of company names may exist in different systems
 
 **"Claude Code skills not showing up"**
-- Skills directory not linked correctly
+- Not running Claude Code from the project directory
 - Solution:
   ```bash
-  # Remove old symlink if exists
-  rm ~/.claude/skills/uipath-pm
+  # Make sure you're in the project directory
+  cd ${PROJECT_DIR}
 
-  # Create new symlink
-  ln -s ${PROJECT_DIR}/skills ~/.claude/skills/uipath-pm
+  # Start Claude Code
+  claude
 
-  # Restart Claude Code
+  # Verify skills with /help command
   ```
+- Skills are in `.claude/skills/` and only available when running Claude in this directory
 
 **"Permission denied" when running scripts**
 - Scripts don't have execute permissions
@@ -423,12 +474,14 @@ uipath-integration-analyst/
 
 This project uses intelligent caching to minimize authentication flows and API calls:
 
-| Data Source | Cache Duration | Cache Location | Cache Behavior |
-|-------------|----------------|----------------|----------------|
-| ARR Data | 7 days | `arr/*.csv` | Manual upload - use if < 7 days old |
-| License Data | No expiry | `snowflake-data/subsidiary_license_*.csv` | Per-customer cache - use if customer file exists |
-| IS Usage | 7 days | `snowflake-data/snowflake_is_usage_*.csv` | Per-customer cache - refresh if > 7 days old |
-| Support Tickets | 24 hours | `is-cases/sf_integration_cases_*.json` | Per-query cache - refresh if > 24 hours old |
+| Data Source | Cache Duration | Cache Location | Cache Behavior | Source |
+|-------------|----------------|----------------|----------------|---------|
+| ARR Data | 7 days | `arr/*.csv` | Manual - use most recent if < 7 days old | **User provides** (export from data warehouse) |
+| License Data | No expiry | `snowflake-data/subsidiary_license_*.csv` | Per-customer - use if file exists | Auto-generated by scripts |
+| IS Usage | 7 days | `snowflake-data/snowflake_is_usage_*.csv` | Per-customer - refresh if > 7 days old | Auto-generated by scripts |
+| Support Tickets | 24 hours | `is-cases/sf_integration_cases_*.json` | Per-query - refresh if > 24 hours old | Auto-generated by scripts |
+
+**ARR Data Setup**: Place your ARR CSV file in the `arr/` directory. The file should contain columns: `NAME,GROUPEDORIGINATOR,APIUSAGE,ARR,Ticket Count`.
 
 **Cache Invalidation**: Delete specific files in cache directories to force fresh queries.
 
