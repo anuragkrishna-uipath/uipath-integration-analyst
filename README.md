@@ -37,8 +37,8 @@ A Product Manager assistant toolkit for analyzing UiPath customer data. Aggregat
 
 2. **Clone and configure**:
    ```bash
-   git clone <repo-url> ~/Documents/uipath-integration-analyst
-   cd ~/Documents/uipath-integration-analyst
+   git clone <repo-url> <project-directory>
+   cd <project-directory>
    cp .env.example .env
    # Edit .env with your email and credentials
    ```
@@ -51,26 +51,26 @@ A Product Manager assistant toolkit for analyzing UiPath customer data. Aggregat
 
 4. **Link Claude Code skills** (optional but recommended):
    ```bash
-   ln -s ~/Documents/uipath-integration-analyst/skills ~/.claude/skills/uipath-pm
+   ln -s ${PROJECT_DIR}/skills ~/.claude/skills/uipath-pm
    ```
 
 5. **Generate your first customer profile**:
    ```bash
-   cd ~/Documents/uipath-integration-analyst
+   cd ${PROJECT_DIR}
    claude  # Start Claude Code
-   /customer-profile "BMW Group"
+   /customer-profile "Example Corporation"
    ```
 
 **Don't have Claude Code?** You can still use the scripts directly:
 ```bash
-bash scripts/subsidiary-license-info.sh "BMW Group"
+bash scripts/subsidiary-license-info.sh "Example Corporation"
 ```
 
 See [detailed setup instructions](#setup) below for step-by-step guidance.
 
 ## What is Claude Code?
 
-[Claude Code](https://claude.ai/code) is an AI-powered CLI tool that helps you work with codebases, run scripts, and perform analysis through natural language commands. This project is designed to work with Claude Code's skill system, allowing you to generate customer profiles and query data sources using simple commands like `/customer-profile "BMW"`.
+[Claude Code](https://claude.ai/code) is an AI-powered CLI tool that helps you work with codebases, run scripts, and perform analysis through natural language commands. This project is designed to work with Claude Code's skill system, allowing you to generate customer profiles and query data sources using simple commands like `/customer-profile "Customer Name"`.
 
 ## Prerequisites
 
@@ -107,8 +107,8 @@ Before setting up this project, you'll need to install the following tools:
 
 ```bash
 # Clone the repository to your local machine
-git clone <repository-url> ~/Documents/uipath-integration-analyst
-cd ~/Documents/uipath-integration-analyst
+git clone <repository-url> <project-directory>
+cd <project-directory>
 ```
 
 ### 2. Install Claude Code CLI (Recommended)
@@ -138,18 +138,18 @@ Add the following configuration to `.env`:
 
 ```bash
 # Project Configuration
-PROJECT_DIR=~/Documents/uipath-integration-analyst
+PROJECT_DIR=<full-path-to-project-directory>
 
 # Salesforce Configuration
-SALESFORCE_INSTANCE_URL=https://uipath.my.salesforce.com
-SALESFORCE_ORG_ALIAS=uipath
+SALESFORCE_INSTANCE_URL=https://yourorg.my.salesforce.com
+SALESFORCE_ORG_ALIAS=yourorg
 
 # Snowflake Configuration
-SNOWFLAKE_ACCOUNT=UIPATH-UIPATH_OBSERVABILITY
-SNOWFLAKE_USER=your.email@uipath.com
+SNOWFLAKE_ACCOUNT=YOUR_SNOWFLAKE_ACCOUNT
+SNOWFLAKE_USER=your.email@company.com
 ```
 
-**Replace** `your.email@uipath.com` with your actual UiPath email address.
+**Replace** the placeholder values with your actual configuration.
 
 **Important**:
 - Never commit the `.env` file to git (it's already in `.gitignore`)
@@ -178,7 +178,7 @@ Snowflake authentication happens automatically via SSO when running queries - no
 
 ```bash
 # Create directories for cached data
-mkdir -p ~/Documents/uipath-integration-analyst/{arr,snowflake-data,is-cases}
+mkdir -p ${PROJECT_DIR}/{arr,snowflake-data,is-cases}
 ```
 
 ### 6. Set Up Claude Code Skills (If Using Claude Code)
@@ -187,15 +187,15 @@ Link the skills directory so Claude Code can discover them:
 
 ```bash
 # Option 1: Symlink the entire skills directory (recommended)
-ln -s ~/Documents/uipath-integration-analyst/skills ~/.claude/skills/uipath-pm
+ln -s ${PROJECT_DIR}/skills ~/.claude/skills/uipath-pm
 
 # Option 2: Symlink individual skills
 mkdir -p ~/.claude/skills
-ln -s ~/Documents/uipath-integration-analyst/skills/customer-profile ~/.claude/skills/customer-profile
-ln -s ~/Documents/uipath-integration-analyst/skills/sf-integration-cases ~/.claude/skills/sf-integration-cases
-ln -s ~/Documents/uipath-integration-analyst/skills/snowflake-customer-license-info ~/.claude/skills/snowflake-customer-license-info
-ln -s ~/Documents/uipath-integration-analyst/skills/snowflake-is-usage ~/.claude/skills/snowflake-is-usage
-ln -s ~/Documents/uipath-integration-analyst/skills/customer-in-news ~/.claude/skills/customer-in-news
+ln -s ${PROJECT_DIR}/skills/customer-profile ~/.claude/skills/customer-profile
+ln -s ${PROJECT_DIR}/skills/sf-integration-cases ~/.claude/skills/sf-integration-cases
+ln -s ${PROJECT_DIR}/skills/snowflake-customer-license-info ~/.claude/skills/snowflake-customer-license-info
+ln -s ${PROJECT_DIR}/skills/snowflake-is-usage ~/.claude/skills/snowflake-is-usage
+ln -s ${PROJECT_DIR}/skills/customer-in-news ~/.claude/skills/customer-in-news
 ```
 
 Verify skills are available:
@@ -210,7 +210,7 @@ Verify skills are available:
 Only needed if you want to use the Python Salesforce fallback client:
 
 ```bash
-cd ~/Documents/uipath-integration-analyst
+cd ${PROJECT_DIR}
 python3 -m venv venv
 source venv/bin/activate
 pip install simple-salesforce
@@ -224,23 +224,23 @@ If you have Claude Code installed, you can use natural language and slash comman
 
 ```bash
 # Start Claude Code in the project directory
-cd ~/Documents/uipath-integration-analyst
+cd ${PROJECT_DIR}
 claude
 
 # Generate comprehensive customer profile (includes all data sources + news)
-/customer-profile "BMW Group"
-/customer-profile "PepsiCo, Inc"
+/customer-profile "Example Corporation"
+/customer-profile "Customer Name"
 
 # Pull specific data sources
-/sf-integration-cases 180 "BMW Group"              # Last 180 days of support tickets
-/snowflake-customer-license-info "BMW Group"       # License consumption data
-/snowflake-is-usage "BMW Group"                    # Integration Service API usage (last 3 months)
-/customer-in-news "BMW Group"                      # Recent news articles
+/sf-integration-cases 180 "Customer Name"              # Last 180 days of support tickets
+/snowflake-customer-license-info "Customer Name"       # License consumption data
+/snowflake-is-usage "Customer Name"                    # Integration Service API usage (last 3 months)
+/customer-in-news "Customer Name"                      # Recent news articles
 
 # Or just ask Claude naturally:
-# "Generate a customer profile for BMW"
-# "What are the recent support tickets for PepsiCo?"
-# "Show me the license consumption for Microsoft"
+# "Generate a customer profile for Example Corporation"
+# "What are the recent support tickets for Customer Name?"
+# "Show me the license consumption for Customer Name"
 ```
 
 **Benefits of Claude Code**:
@@ -255,25 +255,25 @@ claude
 You can also run the data collection scripts directly without Claude Code:
 
 ```bash
-cd ~/Documents/uipath-integration-analyst
+cd ${PROJECT_DIR}
 
 # Fetch customer license data from Snowflake
-bash scripts/subsidiary-license-info.sh "BMW Group"
+bash scripts/subsidiary-license-info.sh "Customer Name"
 
 # Fetch support tickets from Salesforce (last 180 days)
-bash scripts/sf-integration-cases.sh 180 "BMW Group"
+bash scripts/sf-integration-cases.sh 180 "Customer Name"
 
 # Fetch Integration Service API usage from Snowflake (last 3 months)
-bash scripts/snowflake-is-usage.sh "BMW Group"
+bash scripts/snowflake-is-usage.sh "Customer Name"
 
 # Query all customers (no customer filter)
 bash scripts/snowflake-is-usage.sh
 ```
 
 **Note**: Scripts read credentials from `.env` file automatically. Results are saved to:
-- License data: `~/Documents/uipath-integration-analyst/snowflake-data/`
-- Support tickets: `~/Documents/uipath-integration-analyst/is-cases/`
-- API usage: `~/Documents/uipath-integration-analyst/snowflake-data/`
+- License data: `${PROJECT_DIR}/snowflake-data/`
+- Support tickets: `${PROJECT_DIR}/is-cases/`
+- API usage: `${PROJECT_DIR}/snowflake-data/`
 
 ### Understanding the Output
 
@@ -352,7 +352,7 @@ uipath-integration-analyst/
 - Running scripts from wrong directory
 - Solution: Always run scripts from project root or use absolute paths:
   ```bash
-  cd ~/Documents/uipath-integration-analyst
+  cd ${PROJECT_DIR}
   bash scripts/snowflake-is-usage.sh "Customer Name"
   ```
 
@@ -375,7 +375,7 @@ uipath-integration-analyst/
 **"No results found for customer"**
 - Customer name spelling doesn't match Snowflake/Salesforce records
 - Solution: Try partial names or check exact spelling in source systems
-- Example: "T-Mobile" vs "T-Mobile USA, Inc" vs "T-Mobile US, Inc"
+- Example: Different variations of company names may exist in different systems
 
 **"Claude Code skills not showing up"**
 - Skills directory not linked correctly
@@ -385,7 +385,7 @@ uipath-integration-analyst/
   rm ~/.claude/skills/uipath-pm
 
   # Create new symlink
-  ln -s ~/Documents/uipath-integration-analyst/skills ~/.claude/skills/uipath-pm
+  ln -s ${PROJECT_DIR}/skills ~/.claude/skills/uipath-pm
 
   # Restart Claude Code
   ```
