@@ -1,6 +1,6 @@
-# PM Assistant
+# uipath-integration-analyst
 
-A Product Manager assistant toolkit for analyzing UiPath customer data. Aggregates information from Salesforce, Snowflake, and ARR data to generate comprehensive customer profiles and actionable insights.
+A Intefration assistant toolkit for analyzing UiPath customer data w.r.t integrations. Aggregates information from Salesforce, Snowflake, and ARR data to generate comprehensive customer profiles and actionable insights.
 
 ## Features
 
