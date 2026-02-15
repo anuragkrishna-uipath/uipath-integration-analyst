@@ -46,15 +46,15 @@ When this skill is invoked:
 
 3. **Execute the script**:
    ```bash
-   bash ${PROJECT_DIR}/snowflake-is-usage.sh "<customer_name>"
+   bash ${PROJECT_DIR}/scripts/snowflake-is-usage.sh "<customer_name>"
    ```
    Examples:
    ```bash
    # Query specific customer (checks cache first)
-   bash ${PROJECT_DIR}/snowflake-is-usage.sh "PepsiCo, Inc"
+   bash ${PROJECT_DIR}/scripts/snowflake-is-usage.sh "PepsiCo, Inc"
 
    # Query all customers (no cache check, no customer filter)
-   bash ${PROJECT_DIR}/snowflake-is-usage.sh
+   bash ${PROJECT_DIR}/scripts/snowflake-is-usage.sh
    ```
 
    Note: The script reads SNOWFLAKE_USER from .env file automatically.
@@ -110,14 +110,14 @@ If you need to run the script directly (bypassing the skill):
 
 ```bash
 # Query specific customer (checks cache first, username from .env)
-bash ${PROJECT_DIR}/snowflake-is-usage.sh "Customer Name"
+bash ${PROJECT_DIR}/scripts/snowflake-is-usage.sh "Customer Name"
 
 # Query all customers (no cache check, no customer filter)
-bash ${PROJECT_DIR}/snowflake-is-usage.sh
+bash ${PROJECT_DIR}/scripts/snowflake-is-usage.sh
 
 # Examples
-bash ${PROJECT_DIR}/snowflake-is-usage.sh "PepsiCo, Inc"
-bash ${PROJECT_DIR}/snowflake-is-usage.sh
+bash ${PROJECT_DIR}/scripts/snowflake-is-usage.sh "PepsiCo, Inc"
+bash ${PROJECT_DIR}/scripts/snowflake-is-usage.sh
 ```
 
 **Prerequisites**:

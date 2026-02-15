@@ -63,13 +63,13 @@ When this skill is invoked:
 
 3. **Execute the script**:
    ```bash
-   bash ${PROJECT_DIR}/sf-integration-cases.sh <days> <customer_name>
+   bash ${PROJECT_DIR}/scripts/sf-integration-cases.sh <days> <customer_name>
    ```
    Examples:
    ```bash
-   bash ${PROJECT_DIR}/sf-integration-cases.sh 7
-   bash ${PROJECT_DIR}/sf-integration-cases.sh 14 "Microsoft"
-   bash ${PROJECT_DIR}/sf-integration-cases.sh 30 "Acme Corp"
+   bash ${PROJECT_DIR}/scripts/sf-integration-cases.sh 7
+   bash ${PROJECT_DIR}/scripts/sf-integration-cases.sh 14 "Microsoft"
+   bash ${PROJECT_DIR}/scripts/sf-integration-cases.sh 30 "Acme Corp"
    ```
 
 4. **Display results**:
@@ -98,15 +98,15 @@ If you need to run the script directly (bypassing the skill):
 
 ```bash
 # Query cases with time range only (all customers)
-bash ${PROJECT_DIR}/sf-integration-cases.sh <days>
+bash ${PROJECT_DIR}/scripts/sf-integration-cases.sh <days>
 
 # Query cases for specific customer
-bash ${PROJECT_DIR}/sf-integration-cases.sh <days> "Customer Name"
+bash ${PROJECT_DIR}/scripts/sf-integration-cases.sh <days> "Customer Name"
 
 # Examples
-bash ${PROJECT_DIR}/sf-integration-cases.sh 7                    # Last 7 days, all customers
-bash ${PROJECT_DIR}/sf-integration-cases.sh 14 "Microsoft"      # Last 14 days, Microsoft only
-bash ${PROJECT_DIR}/sf-integration-cases.sh 180 "Acme Corp"     # Last 180 days, Acme Corp
+bash ${PROJECT_DIR}/scripts/sf-integration-cases.sh 7                    # Last 7 days, all customers
+bash ${PROJECT_DIR}/scripts/sf-integration-cases.sh 14 "Microsoft"      # Last 14 days, Microsoft only
+bash ${PROJECT_DIR}/scripts/sf-integration-cases.sh 180 "Acme Corp"     # Last 180 days, Acme Corp
 ```
 
 **Script Output**:

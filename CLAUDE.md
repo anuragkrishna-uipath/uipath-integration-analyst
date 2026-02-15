@@ -10,10 +10,10 @@ This is a Product Manager assistant toolkit for analyzing UiPath customer data. 
 
 ### Data Pipeline Flow
 
-1. **Data Extraction Scripts** (bash shells)
-   - `subsidiary-license-info.sh` - Queries Snowflake for customer license data
-   - `sf-integration-cases.sh` - Queries Salesforce for support tickets
-   - `snowflake-is-usage.sh` - Queries Snowflake for Integration Service API usage
+1. **Data Extraction Scripts** (bash shells in `scripts/` directory)
+   - `scripts/subsidiary-license-info.sh` - Queries Snowflake for customer license data
+   - `scripts/sf-integration-cases.sh` - Queries Salesforce for support tickets
+   - `scripts/snowflake-is-usage.sh` - Queries Snowflake for Integration Service API usage
    - All scripts save results to `~/Documents/uipath-integration-analyst/` subdirectories with timestamped filenames
 
 2. **Data Storage Locations**
@@ -98,6 +98,11 @@ ${PROJECT_DIR}/                   # Base directory (configurable via .env)
 │   ├── subsidiary_license_query.sql       # License consumption query
 │   ├── is_usage_query_with_customer.sql   # IS usage with customer filter
 │   └── is_usage_query_all.sql             # IS usage all customers
+├── scripts/                      # Data extraction scripts
+│   ├── subsidiary-license-info.sh         # Snowflake license query script
+│   ├── sf-integration-cases.sh            # Salesforce case query script
+│   ├── snowflake-is-usage.sh              # Snowflake API usage query script
+│   └── fetch_salesforce_cases.py          # Python Salesforce client
 ├── .claude/
 │   └── skills/                   # Claude Code skills
 │       ├── customer-profile/     # Main customer profiling skill
@@ -105,10 +110,6 @@ ${PROJECT_DIR}/                   # Base directory (configurable via .env)
 │       ├── customer-in-news/     # Web search for customer news
 │       ├── snowflake-customer-license-info/
 │       └── snowflake-is-usage/
-├── subsidiary-license-info.sh    # Snowflake license query script
-├── sf-integration-cases.sh       # Salesforce case query script
-├── snowflake-is-usage.sh         # Snowflake API usage query script
-├── fetch_salesforce_cases.py     # Python Salesforce client
 ├── .env                          # Configuration (not in repo)
 └── venv/                         # Python virtual environment
 ```

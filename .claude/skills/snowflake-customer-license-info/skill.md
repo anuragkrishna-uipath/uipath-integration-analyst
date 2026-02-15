@@ -44,12 +44,12 @@ When this skill is invoked:
 
 3. **Execute the script**:
    ```bash
-   bash ${PROJECT_DIR}/subsidiary-license-info.sh "<subsidiary_name>"
+   bash ${PROJECT_DIR}/scripts/subsidiary-license-info.sh "<subsidiary_name>"
    ```
    Examples:
    ```bash
-   bash ${PROJECT_DIR}/subsidiary-license-info.sh "PepsiCo, Inc"
-   bash ${PROJECT_DIR}/subsidiary-license-info.sh "Microsoft Corporation"
+   bash ${PROJECT_DIR}/scripts/subsidiary-license-info.sh "PepsiCo, Inc"
+   bash ${PROJECT_DIR}/scripts/subsidiary-license-info.sh "Microsoft Corporation"
    ```
 
    Note: The script reads SNOWFLAKE_USER from .env file automatically.
@@ -100,11 +100,11 @@ If you need to run the script directly (bypassing the skill):
 
 ```bash
 # Query customer license data (username from .env)
-bash ${PROJECT_DIR}/subsidiary-license-info.sh "Customer Name"
+bash ${PROJECT_DIR}/scripts/subsidiary-license-info.sh "Customer Name"
 
 # Examples
-bash ${PROJECT_DIR}/subsidiary-license-info.sh "PepsiCo, Inc"
-bash ${PROJECT_DIR}/subsidiary-license-info.sh "Microsoft Corporation"
+bash ${PROJECT_DIR}/scripts/subsidiary-license-info.sh "PepsiCo, Inc"
+bash ${PROJECT_DIR}/scripts/subsidiary-license-info.sh "Microsoft Corporation"
 ```
 
 **Prerequisites**:
