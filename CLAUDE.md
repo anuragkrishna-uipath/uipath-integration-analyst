@@ -91,7 +91,6 @@ All data-fetching skills implement intelligent caching with data validation to m
 
 ```
 ${PROJECT_DIR}/                   # Base directory (configurable via .env)
-├── arr/                          # DEPRECATED: ARR data now in Snowflake license query
 ├── snowflake-data/               # License consumption & ARR data (CSV)
 ├── is-cases/                     # Support tickets (JSON)
 ├── sql/                          # SQL query files (modular)
