@@ -44,6 +44,31 @@ All data gathering is delegated to specialized skills that handle caching automa
 - **Support Tickets**: Handled by `/sf-integration-cases` skill (24-hour cache)
 - **Customer News**: Handled by `/customer-in-news` skill (real-time web search)
 
+**IMPORTANT - Provide Status Updates:**
+After launching all data collection tasks in parallel, provide an initial status message showing:
+- ✅ Completed tasks (e.g., ARR data already parsed)
+- 🔄 Running tasks (e.g., querying Snowflake, Salesforce, searching web)
+- Brief summary of what data is being collected from each source
+
+Then, while waiting for sub-skills to complete:
+- Check for newly created data files every 15-20 seconds using `ls -lt` commands
+- Update the user when each data source completes (e.g., "✅ License data retrieved")
+- Show a running count of completed vs total tasks (e.g., "3/5 data sources complete")
+- This keeps the user informed during the 1-3 minute data collection period
+
+Example status update format:
+```
+**Data Collection Status for <Customer>:**
+
+✅ ARR Data - Completed
+✅ License Data - Retrieved from Snowflake (2,453 records)
+🔄 IS Usage Data - Querying Snowflake telemetry
+🔄 Support Tickets - Querying Salesforce (last 180 days)
+🔄 Customer News - Searching web
+
+[3/5 data sources complete - compiling profile...]
+```
+
 ### 3. Gather ARR Data
 - Search for ARR data in `${PROJECT_DIR}/arr/` folder
 - Look for most recent CSV file (check modification date)
@@ -99,7 +124,11 @@ All data gathering is delegated to specialized skills that handle caching automa
 
 ### 8. Format Output
 
-Present data in TWO consolidated tables: one for customer data with insights, and one for action items.
+**ALWAYS present data in TWO consolidated tables** - this is the ONLY acceptable output format:
+1. **Customer Data table** with Category/Data/Insights columns
+2. **Action Items table** with Priority/Category/Data Point/Action columns
+
+**DO NOT use any other format** (no bullet lists, no paragraphs, no alternative layouts).
 
 ```markdown
 # Customer Profile: <Customer Name>
@@ -128,8 +157,11 @@ Present data in TWO consolidated tables: one for customer data with insights, an
 *Profile generated: <Timestamp> | Data sources: ARR (<file_date>), Licenses (<file_date>), IS Usage (<date_range>), Support Tickets (<date_range>)*
 ```
 
-**Formatting Guidelines:**
-- Use TWO tables: (1) Customer Data with Category/Data/Insights columns, (2) Action Items with Priority/Category/Data Point/Action columns
+**Formatting Guidelines (MANDATORY):**
+- **ALWAYS use TWO tables** - this is the only acceptable format:
+  1. **Customer Data table**: Category | Data | Insights columns
+  2. **Action Items table**: Priority | Category | Data Point | Action columns
+- **Never use alternative formats** (no paragraphs, no bullet lists, no other layouts)
 - In the Data column, separate each metric with bullet point (•) and space - do NOT use line breaks or `<br>` tags
 - Keep license data comprehensive but concise - show top 10-15 products by quantity
 - For IS Usage, always calculate and display capacity utilization (billable calls vs licensed capacity)
