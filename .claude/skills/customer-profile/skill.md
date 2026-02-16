@@ -124,50 +124,84 @@ Example status update format:
 
 ### 8. Format Output
 
-**ALWAYS present data in TWO consolidated tables** - this is the ONLY acceptable output format:
-1. **Customer Data table** with Category/Data/Insights columns
-2. **Action Items table** with Priority/Category/Data Point/Action columns
+**ALWAYS present data in TWO ASCII tables with box-drawing borders** - this is the ONLY acceptable output format:
+1. **Customer Data table** with Category/Data/Insights columns (5 rows)
+2. **Action Items table** with Priority/Category/Data Point/Action columns (3-5 rows)
 
-**DO NOT use any other format** (no bullet lists, no paragraphs, no alternative layouts).
+**CRITICAL FORMATTING REQUIREMENTS:**
+- Use ASCII box-drawing characters: ┌─┬─┐ │ ├─┼─┤ └─┴─┘
+- Tables MUST be wrapped in code blocks with triple backticks
+- DO NOT use markdown tables (| --- |) - ONLY use ASCII tables with visible borders
+- DO NOT use any other format (no bullet lists, no paragraphs, no alternative layouts)
 
-```markdown
+```
 # Customer Profile: <Customer Name>
 
 ## Customer Data
 
-| Category | Data | Insights |
-|----------|------|----------|
-| **Account** | Customer Name: <Name> • Primary Use Case: <Use case> • ARR Bucket: <Bucket> • Region: <Region> • Account Owner: <Name> • CSM: <Name> | <1-2 sentences about customer profile, maturity, deployment scale> |
-| **Licenses (Q1 2026)** | API Calls (licensed): <qty> • Task Capture: <qty> • AI Units: <qty> • Robot Units: <qty> • Data Service: <qty> • Action Center: <qty> • Assistant: <qty> • Apps: <qty> • DU Units: <qty> • StudioX: <qty> • Studio: <qty> • Unattended Robot: <qty> • Test Robot: <qty> | <1-2 sentences about license mix, deployment strategy, key products> |
-| **IS Usage (3mo)** | Total API Calls: <qty> • Billable API Calls: <qty non-poller> • Licensed API Capacity: <qty> • **Capacity Utilization: <X>x over/under licensed capacity** • Primary Originator: <Type> (<pct>%) • Top Connector: <Name> (<pct>%) • Secondary Connectors: <Names> • Integration Pattern: <Pattern> • IS Pollers: <pct>% (non-billable) | <1-2 sentences about usage patterns, optimization opportunities. IMPORTANT: Note that IS Poller calls don't count toward licensing - only assess overage for non-poller calls vs licensed capacity> |
-| **Support (180 days)** | Total Tickets: <count> • Open Tickets: <count> • Priority Distribution: <summary> • Top Issue Theme: <theme> | <1-2 sentences about support health, common issues, customer experience> |
-| **Customer News** | <Recent news headlines with key metrics> • <Strategic initiatives> • <Financial/operational updates> | <1-2 sentences about customer strategic direction and alignment opportunities> • **Sources:** [Source 1](URL1) \| [Source 2](URL2) \| [Source 3](URL3) |
+```
+┌────────────────────┬─────────────────────────────────────────────────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────────────┐
+│ Category           │ Data                                                                            │ Insights                                                                         │
+├────────────────────┼─────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ Account            │ Customer Name: <Name> • Primary Use Case: <Use case> • ARR Bucket: <Bucket> • │ <1-2 sentences about customer profile, maturity, deployment scale>               │
+│                    │ Region: <Region> • Account Owner: <Name> • CSM: <Name>                         │                                                                                  │
+├────────────────────┼─────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ Licenses           │ API Calls (licensed): <qty> • DU Units: <qty> • AI Units: <qty> • Task         │ <1-2 sentences about license mix, deployment strategy, key products>             │
+│ (Q1 2026)          │ Capture: <qty> • Assistant: <qty> • Agentic Units: <qty> • Action Center:      │                                                                                  │
+│                    │ <qty> • Data Service: <qty> • Studio: <qty> • StudioX: <qty> • Apps: <qty> •   │                                                                                  │
+│                    │ Test Robot: <qty> • [other products...]                                         │                                                                                  │
+├────────────────────┼─────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ IS Usage (3mo)     │ Total API Calls: <qty> • Billable API Calls: <qty non-poller> • Licensed API   │ <1-2 sentences about usage patterns, optimization opportunities. IMPORTANT: Note │
+│                    │ Capacity: <qty> • Capacity Utilization: <X>x over/under licensed capacity •    │ that IS Poller calls don't count toward licensing - only assess overage for     │
+│                    │ Primary Originator: <Type> (<pct>%) • Top Connector: <Name> (<pct>%) •         │ non-poller calls vs licensed capacity>                                          │
+│                    │ Secondary Connectors: <Names> • Integration Pattern: <Pattern> • IS Pollers:    │                                                                                  │
+│                    │ <pct>% (non-billable)                                                           │                                                                                  │
+├────────────────────┼─────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ Support            │ Total Tickets: <count> • Open Tickets: <count> • Priority Distribution:        │ <1-2 sentences about support health, common issues, customer experience>         │
+│ (180 days)         │ <summary> • Top Issue Theme: <theme>                                            │                                                                                  │
+├────────────────────┼─────────────────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ Customer News      │ <Recent news headlines with key metrics> • <Strategic initiatives> •            │ <1-2 sentences about customer strategic direction and alignment opportunities> • │
+│                    │ <Financial/operational updates>                                                 │ Sources: [Source 1](URL1), [Source 2](URL2), [Source 3](URL3)                   │
+└────────────────────┴─────────────────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ## Action Items
 
-| Priority | Category | Data Point | Action |
-|----------|----------|------------|--------|
-| **1** | **<Category>** | <Specific metric or observation> | <Detailed action with timeline and stakeholders> |
-| **2** | **<Category>** | <Specific metric or observation> | <Detailed action with timeline and stakeholders> |
-| **3** | **<Category>** | <Specific metric or observation> | <Detailed action with timeline and stakeholders> |
-| **4** | **<Category>** | <Specific metric or observation> | <Detailed action with timeline and stakeholders> |
-| **5** | **<Category>** | <Specific metric or observation> | <Detailed action with timeline and stakeholders> |
+```
+┌──────────┬─────────────────────────┬────────────────────────────────────────────────────────────────────┬──────────────────────────────────────────────────────────────────────────────────┐
+│ Priority │ Category                │ Data Point                                                         │ Action                                                                           │
+├──────────┼─────────────────────────┼────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ 1        │ <Category>              │ <Specific metric or observation>                                   │ <Detailed action with timeline and stakeholders>                                 │
+├──────────┼─────────────────────────┼────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ 2        │ <Category>              │ <Specific metric or observation>                                   │ <Detailed action with timeline and stakeholders>                                 │
+├──────────┼─────────────────────────┼────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ 3        │ <Category>              │ <Specific metric or observation>                                   │ <Detailed action with timeline and stakeholders>                                 │
+├──────────┼─────────────────────────┼────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ 4        │ <Category>              │ <Specific metric or observation>                                   │ <Detailed action with timeline and stakeholders>                                 │
+├──────────┼─────────────────────────┼────────────────────────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────┤
+│ 5        │ <Category>              │ <Specific metric or observation>                                   │ <Detailed action with timeline and stakeholders>                                 │
+└──────────┴─────────────────────────┴────────────────────────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 *Profile generated: <Timestamp> | Data sources: ARR (<file_date>), Licenses (<file_date>), IS Usage (<date_range>), Support Tickets (<date_range>)*
 ```
 
 **Formatting Guidelines (MANDATORY):**
-- **ALWAYS use TWO tables** - this is the only acceptable format:
-  1. **Customer Data table**: Category | Data | Insights columns
-  2. **Action Items table**: Priority | Category | Data Point | Action columns
+- **ALWAYS use ASCII tables with box-drawing borders** - this is the only acceptable format:
+  1. **Customer Data table**: Category │ Data │ Insights columns (3 columns, 5 rows)
+  2. **Action Items table**: Priority │ Category │ Data Point │ Action columns (4 columns, 3-5 rows)
+- **Use box-drawing characters**: ┌─┬─┐ │ ├─┼─┤ └─┴─┘
+- **Wrap tables in code blocks** using triple backticks (```)
+- **DO NOT use markdown tables** (| --- |) - they don't render with visible borders
 - **Never use alternative formats** (no paragraphs, no bullet lists, no other layouts)
-- In the Data column, separate each metric with bullet point (•) and space - do NOT use line breaks or `<br>` tags
+- In the Data column, separate each metric with bullet point (•) and space - do NOT use line breaks
 - Keep license data comprehensive but concise - show top 10-15 products by quantity
 - For IS Usage, always calculate and display capacity utilization (billable calls vs licensed capacity)
 - For Customer News, include 2-3 key headlines with metrics, then provide insight with source links
 - Action items should be 3-5 items maximum, prioritized by revenue impact
 - Always include source citations for customer news at the end of insights
+- Text within cells should wrap naturally - use multiple lines within a cell if needed to keep columns readable
 
 ### 9. Generate Action Items
 
