@@ -1,6 +1,6 @@
 ---
 name: snowflake-customer-license-info
-description: Pull customer/subsidiary license consumption information from Snowflake
+description: Pull customer/subsidiary license consumption and ARR data from Snowflake
 user-invocable: true
 argument-hint: "[subsidiary_name]"
 allowed-tools: Bash, Read, Write, Glob, AskUserQuestion
@@ -8,7 +8,7 @@ allowed-tools: Bash, Read, Write, Glob, AskUserQuestion
 
 # Snowflake Customer License Information Skill
 
-Query Snowflake to retrieve license consumption information for a specific customer subsidiary.
+Query Snowflake to retrieve license consumption and ARR data for a specific customer subsidiary.
 
 ## Configuration
 - **Snowflake Account**: Configured in .env file (SNOWFLAKE_ACCOUNT)
@@ -59,6 +59,10 @@ When this skill is invoked:
    - The script saves detailed CSV results to `${PROJECT_DIR}/snowflake-data/subsidiary_license_<subsidiary_slug>_<timestamp>.csv`
    - After the script completes, read the CSV file and create a formatted table showing:
      - Subsidiary Name
+     - **ARR Bucket** (from CUSTOMERARRBUCKET column)
+     - **Region** (from CUSTOMERSALESREGION column)
+     - **Account Owner** (from CUSTOMERACCOUNTOWNER column)
+     - **CSM Name** (from CUSTOMERCSMNAME column)
      - Product/SKU information
      - License counts (Consumed, Allocated, Available)
      - License types and tiers

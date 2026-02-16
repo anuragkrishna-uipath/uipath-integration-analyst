@@ -91,8 +91,8 @@ All data-fetching skills implement intelligent caching with data validation to m
 
 ```
 ${PROJECT_DIR}/                   # Base directory (configurable via .env)
-├── arr/                          # ARR and API usage data (CSV)
-├── snowflake-data/               # License consumption data (CSV)
+├── arr/                          # DEPRECATED: ARR data now in Snowflake license query
+├── snowflake-data/               # License consumption & ARR data (CSV)
 ├── is-cases/                     # Support tickets (JSON)
 ├── sql/                          # SQL query files (modular)
 │   ├── subsidiary_license_query.sql       # License consumption query
@@ -121,13 +121,16 @@ ${PROJECT_DIR}/                   # Base directory (configurable via .env)
 
 ## Data Sources Overview
 
-This project integrates data from three primary sources:
+This project integrates data from two primary sources:
 
-1. **Snowflake** - Customer license consumption and usage data
+1. **Snowflake** - Customer license consumption, ARR, and usage data
    - Account: Configured in .env (SNOWFLAKE_ACCOUNT)
    - User: Configured in .env (SNOWFLAKE_USER)
-   - License data: `prod_customer360.customerprofile.CustomerSubsidiaryLicenseProfile`
-   - IS telemetry: `PROD_ELEMENTSERVICE.APPINS.INTEGRATIONSERVICE_TELEMETRY_STANDARDIZED`
+   - **License & ARR data**: `prod_customer360.customerprofile.CustomerSubsidiaryLicenseProfile`
+     - Includes: CUSTOMERARRBUCKET, CUSTOMERSALESREGION, CUSTOMERACCOUNTOWNER, CUSTOMERCSMNAME
+     - Provides: License quantities by product, account metadata, ARR bucket
+   - **IS telemetry**: `PROD_ELEMENTSERVICE.APPINS.INTEGRATIONSERVICE_TELEMETRY_STANDARDIZED`
+     - Provides: API usage by connector, originator, and customer
    - See: `/snowflake-customer-license-info` and `/snowflake-is-usage` skills for details
 
 2. **Salesforce** - Support cases and customer issues
@@ -135,11 +138,6 @@ This project integrates data from three primary sources:
    - Org: Configured in .env (SALESFORCE_ORG_ALIAS)
    - Case object with Integration Service product component filter
    - See: `/sf-integration-cases` skill for details
-
-3. **ARR Data (Local CSV files)** - Annual Recurring Revenue and API usage metrics
-   - Stored in: `${PROJECT_DIR}/arr/`
-   - Format: Customer name, originator, API usage, ARR bucket, ticket count
-   - See: `/customer-profile` skill for parsing logic
 
 For detailed query specifications, table schemas, and data parsing patterns, refer to individual skill documentation.
 

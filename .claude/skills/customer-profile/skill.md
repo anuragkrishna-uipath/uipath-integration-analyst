@@ -21,10 +21,10 @@ This skill provides a 360-degree view of a customer by aggregating:
 
 ## Data Sources
 
-1. **ARR Data**: `${PROJECT_DIR}/arr/` folder (Excel/CSV files)
-2. **License Consumption**: Snowflake CustomerSubsidiaryLicenseProfile
-3. **IS Usage**: Snowflake Integration Service telemetry (last 3 months)
-4. **Support Tickets**: Salesforce cases (last 6 months)
+1. **License Consumption & ARR Data**: Snowflake CustomerSubsidiaryLicenseProfile (includes CUSTOMERARRBUCKET, account owner, CSM, region)
+2. **IS Usage**: Snowflake Integration Service telemetry (last 3 months)
+3. **Support Tickets**: Salesforce cases (last 6 months)
+4. **Customer News**: Web search for recent news and strategic initiatives
 
 ## Instructions
 
@@ -38,8 +38,7 @@ When this skill is invoked:
 ### 2. Data Collection Strategy
 
 All data gathering is delegated to specialized skills that handle caching automatically:
-- **ARR Data**: Read directly from `${PROJECT_DIR}/arr/` (7-day cache)
-- **License Data**: Handled by `/snowflake-customer-license-info` skill (uses cached if exists)
+- **License & ARR Data**: Handled by `/snowflake-customer-license-info` skill (uses cached if exists, includes CUSTOMERARRBUCKET, account owner, CSM, region)
 - **IS Usage Data**: Handled by `/snowflake-is-usage` skill (7-day cache)
 - **Support Tickets**: Handled by `/sf-integration-cases` skill (24-hour cache)
 - **Customer News**: Handled by `/customer-in-news` skill (real-time web search)
@@ -60,31 +59,29 @@ Example status update format:
 ```
 **Data Collection Status for <Customer>:**
 
-✅ ARR Data - Completed
-✅ License Data - Retrieved from Snowflake (2,453 records)
+🔄 License & ARR Data - Querying Snowflake CustomerSubsidiaryLicenseProfile
 🔄 IS Usage Data - Querying Snowflake telemetry
 🔄 Support Tickets - Querying Salesforce (last 180 days)
 🔄 Customer News - Searching web
 
-[3/5 data sources complete - compiling profile...]
+[0/4 data sources complete - gathering data...]
 ```
 
-### 3. Gather ARR Data
-- Search for ARR data in `${PROJECT_DIR}/arr/` folder
-- Look for most recent CSV file (check modification date)
-- Search for customer name in the file using Grep
-- Extract: ARR bucket, region, account owner, CSM, ticket count
-
-### 4. Gather License Consumption Data
+### 3. Gather License Consumption & ARR Data
 - Invoke the `/snowflake-customer-license-info` skill with customer name
 - The skill will handle caching automatically (uses cached data if customer file exists)
 - After skill completes, read the cached CSV file from `${PROJECT_DIR}/snowflake-data/`
-- Extract latest month data:
-  - Total licenses by product type
-  - Key products (Studio, StudioX, robots, DU units, AI units, API calls)
-  - MAU/MEU numbers
+- Extract from the CSV data:
+  - **ARR bucket** (from CUSTOMERARRBUCKET column)
+  - **Region** (from CUSTOMERSALESREGION column)
+  - **Account Owner** (from CUSTOMERACCOUNTOWNER column)
+  - **CSM Name** (from CUSTOMERCSMNAME column)
+  - **Latest month license data**:
+    - Total licenses by product type
+    - Key products (Studio, StudioX, robots, DU units, AI units, API calls)
+    - MAU/MEU numbers
 
-### 5. Gather Integration Service Usage
+### 4. Gather Integration Service Usage
 
 **Invoke the skill:**
 - Invoke the `/snowflake-is-usage` skill with customer name only
@@ -104,7 +101,7 @@ Example status update format:
 - When assessing API overages, exclude IS Poller volume from licensed capacity calculations
 - High poller usage (>90%) is an efficiency concern, NOT a licensing concern
 
-### 6. Gather Support Tickets (Last 6 Months)
+### 5. Gather Support Tickets (Last 6 Months)
 - Invoke the `/sf-integration-cases` skill with 180 days and customer name
 - The skill will handle caching automatically (24-hour cache, fetches if expired or customer not found)
 - After skill completes, read the cached JSON file from `${PROJECT_DIR}/is-cases/`
@@ -114,7 +111,7 @@ Example status update format:
   - Priority distribution
   - Common themes from ticket subjects
 
-### 7. Research Customer Context (Always Required)
+### 6. Research Customer Context (Always Required)
 
 **Invoke the customer news skill:**
 - Invoke the `/customer-in-news` skill with customer name using the Skill tool
@@ -122,7 +119,7 @@ Example status update format:
 - Look for: strategic initiatives, partnerships, digital transformation efforts, industry trends
 - Incorporate findings into recommendations and action items
 
-### 8. Format Output
+### 7. Format Output
 
 **ALWAYS present data in TWO ASCII tables with box-drawing borders** - this is the ONLY acceptable output format:
 1. **Customer Data table** with Category/Data/Insights columns (5 rows)
@@ -203,7 +200,7 @@ Example status update format:
 - Always include source citations for customer news at the end of insights
 - Text within cells should wrap naturally - use multiple lines within a cell if needed to keep columns readable
 
-### 9. Generate Action Items
+### 8. Generate Action Items
 
 Action items should be derived from data patterns AND web search findings. Limit to 3-5 high-impact items:
 
@@ -252,25 +249,21 @@ Infer primary use case from usage patterns (KEEP IT GENERAL - avoid specific con
 
 ## Error Handling
 
-- If ARR data not found: Note "ARR data not available"
-- If no Snowflake access: Use "Authentication required"
+- If no Snowflake access: Use "Authentication required" for license/ARR data
+- If customer not found in Snowflake: Note "License and ARR data not available"
 - If customer not found in any system: Provide partial profile with available data
 - Always provide action items even with incomplete data
 
 ## Data Parsing Patterns
 
-### ARR CSV Files
-- Format: `NAME,GROUPEDORIGINATOR,APIUSAGE,ARR,Ticket Count`
-- API usage numbers are annual totals
-- Multiple rows per customer (one per originator type)
-- Use Grep to search for customer name in the most recent CSV file in `${PROJECT_DIR}/arr/`
-
-### License CSV Files
+### License CSV Files (includes ARR data)
 - Skip first 2 lines (auth output), header starts at line 3
-- Key columns: `MONTH` (YYYY-MM-DD), `PRODUCTORSERVICENAME`, `PRODUCTORSERVICEQUANTITY`
+- Key columns for licenses: `MONTH` (YYYY-MM-DD), `PRODUCTORSERVICENAME`, `PRODUCTORSERVICEQUANTITY`
+- Key columns for ARR & account info: `CUSTOMERARRBUCKET`, `CUSTOMERSALESREGION`, `CUSTOMERACCOUNTOWNER`, `CUSTOMERCSMNAME`
 - Always use latest month data (sort by MONTH and take max date)
 - Files may be large (1-6MB, 2000-6000 rows) - use Python csv module for parsing
 - Use `python3` to parse and aggregate by product
+- Extract ARR bucket and account metadata from any row (same values across all rows for a customer)
 
 ### IS Usage CSV Files
 - Skip first 2 lines (auth output), header starts at line 3
@@ -287,8 +280,7 @@ Infer primary use case from usage patterns (KEEP IT GENERAL - avoid specific con
 
 - **Configuration**: Requires PROJECT_DIR, SNOWFLAKE_USER, SNOWFLAKE_ACCOUNT in .env file
 - **Caching behavior**: Automatically uses cached data when available to reduce API calls
-  - ARR data: Uses cached data if < 7 days old, fetches if older or not found
-  - License data: Uses cached data if customer file exists (any age), fetches if customer not found
+  - License & ARR data: Uses cached data if customer file exists (any age), fetches if customer not found
   - IS Usage data: Uses cached data if < 7 days old, fetches from Snowflake if older or customer not found
   - Support tickets: Uses cached data if < 24 hours old, fetches if older or customer not found
 - **IS API Licensing (CRITICAL)**: IS Poller calls do NOT count toward licensed API capacity. Only non-poller originators (Robot, Studio, Connections, Studio Web, etc.) are billable. Always exclude poller volume when assessing API overages.
