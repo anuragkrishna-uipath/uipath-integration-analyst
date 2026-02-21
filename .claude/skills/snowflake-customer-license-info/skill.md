@@ -90,7 +90,14 @@ When this skill is invoked:
 
    Note: The script reads SNOWFLAKE_USER from .env file automatically.
 
-4. **Display results**:
+4. **Clean up stale cache files** (after successful fresh pull):
+   - After the script succeeds (exit code 0), identify the newly created CSV file (the one just written by the script)
+   - Find all older files in `${PROJECT_DIR}/snowflake-data/` matching the same pattern: `subsidiary_license_<subsidiary_normalized>_*.csv`
+   - Delete all matching files EXCEPT the newly created one
+   - Display: "🗑️ Cleaned up N stale cache file(s)"
+   - If no older files exist, skip silently (no message needed)
+
+5. **Display results**:
    - The script will output a summary with total records found
    - The script saves detailed CSV results to `${PROJECT_DIR}/snowflake-data/subsidiary_license_<subsidiary_slug>_<timestamp>.csv`
    - After the script completes, read the CSV file and create a formatted table showing:
@@ -105,11 +112,12 @@ When this skill is invoked:
      - Subscription details
      - Any relevant license metrics
 
-5. **Handle errors**:
+6. **Handle errors**:
    - If SNOWFLAKE_USER not configured: Inform user to set it in .env file
    - If the script fails (exit code != 0), inform the user about authentication issues
    - Suggest running: `snowsql -a ${SNOWFLAKE_ACCOUNT} -u ${SNOWFLAKE_USER} --authenticator externalbrowser`
    - If no results found, inform the user and suggest checking the subsidiary name spelling
+   - Do NOT delete any existing cache files on error (keep stale data as fallback)
 
 ## Data Source
 
@@ -218,3 +226,4 @@ with open(file_path, 'r') as f:
 - For ambiguous names (e.g., "T-Mobile" matches "T-Mobile USA, Inc", "T-Mobile Polska"), results may include multiple subsidiaries
 - No record limit - retrieves all matching records (large customers may return thousands of records)
 - Cache files with no data rows trigger fresh queries automatically
+- Stale cache files are automatically deleted after a successful fresh pull (only the latest file is kept)

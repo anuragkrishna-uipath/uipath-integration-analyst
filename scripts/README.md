@@ -82,23 +82,6 @@ This directory contains scripts for extracting data from Snowflake and Salesforc
 
 ---
 
-### `fetch_salesforce_cases.py`
-**Purpose**: Python client for Salesforce case queries (alternative to sf CLI)
-
-**Usage**:
-```bash
-python fetch_salesforce_cases.py
-```
-
-**Requirements**:
-- Python 3.x
-- simple-salesforce package
-- Salesforce credentials in ../.env (username/password or OAuth)
-
-**Note**: This is a fallback option if sf CLI is not available
-
----
-
 ## General Notes
 
 - All scripts read configuration from `../.env` file in project root

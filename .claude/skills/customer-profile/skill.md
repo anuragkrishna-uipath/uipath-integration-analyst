@@ -315,6 +315,7 @@ Infer primary use case from usage patterns (KEEP IT GENERAL - avoid specific con
   - License & ARR data: Uses cached data if customer file exists (any age), fetches if customer not found
   - IS Usage data: Uses cached data if < 7 days old, fetches from Snowflake if older or customer not found
   - Support tickets: Uses cached data if < 24 hours old, fetches if older or customer not found
+  - **Stale file cleanup**: Each sub-skill automatically deletes older cache files for the same customer after a successful fresh pull (only the latest file is kept)
 - **IS API Licensing (CRITICAL)**: IS Poller calls do NOT count toward licensed API capacity. Only non-poller originators (Robot, Studio, Connections, Studio Web, etc.) are billable. Always exclude poller volume when assessing API overages.
 - **Web search (REQUIRED)**: Always perform web search to gather customer context and incorporate findings into recommendations
 - Requires authentication to both Snowflake and Salesforce (only when fetching new data)
