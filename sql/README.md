@@ -14,7 +14,7 @@ This directory contains SQL query files used by Snowflake data extraction script
 
 ### `is_usage_query_with_customer.sql`
 - **Purpose**: Retrieve Integration Service API usage for a specific customer
-- **Used by**: `snowflake-is-usage.sh` (with customer filter)
+- **Used by**: `snowflake-usage.sh` (with customer filter)
 - **Database**: `PROD_ELEMENTSERVICE`
 - **Time Range**: Last 3 months
 - **Parameter**: `{CUSTOMER_NAME}` - Customer name to filter by (partial match)
@@ -23,7 +23,7 @@ This directory contains SQL query files used by Snowflake data extraction script
 
 ### `is_usage_query_all.sql`
 - **Purpose**: Retrieve Integration Service API usage for all customers
-- **Used by**: `snowflake-is-usage.sh` (without customer filter)
+- **Used by**: `snowflake-usage.sh` (without customer filter)
 - **Database**: `PROD_ELEMENTSERVICE`
 - **Time Range**: Last 3 months
 - **No Limit**: Returns all matching records
