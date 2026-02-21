@@ -26,8 +26,36 @@ When this skill is invoked:
 
 1. **Parse arguments**:
    - Optional argument: Customer name (e.g., `/snowflake-is-usage "PepsiCo, Inc"`)
-   - If no argument provided: Query all customers
    - Username is read from .env file (SNOWFLAKE_USER)
+   - **If no arguments provided**: Show usage help with sample queries and STOP. Display:
+     ```
+     ## Integration Service Usage (`/snowflake-is-usage`)
+
+     Query Snowflake for Integration Service API usage data (last 3 months).
+
+     ### Options
+     | Argument | Required | Description | Default |
+     |----------|----------|-------------|---------|
+     | customer_name | No | Customer name (partial match, case-insensitive) | All customers |
+
+     ### Sample Queries
+     /snowflake-is-usage "PepsiCo, Inc"       # IS usage for PepsiCo
+     /snowflake-is-usage "Microsoft"           # IS usage for Microsoft
+     /snowflake-is-usage "T-Mobile"            # IS usage for T-Mobile
+
+     ### Data Returned
+     - API usage by connector key and originator group
+     - Originator groups: Robot, Studio, IS Pollers, Maestro, Agents, Connections, etc.
+     - Billable vs non-billable breakdown (IS Pollers are non-billable)
+
+     ### Notes
+     - Cache: 7 days per customer
+     - IS Poller calls do NOT count toward API licensing limits
+     - Data source: Snowflake (PROD_ELEMENTSERVICE.APPINS.INTEGRATIONSERVICE_TELEMETRY_STANDARDIZED)
+     ```
+
+     **TIP**: Consider using `/snowflake-usage integration-service` instead — it is the newer,
+     extensible version of this skill that supports multiple modules.
 
 2. **Check cache first** (if customer name provided):
    - Look for files in `${PROJECT_DIR}/snowflake-data/` matching pattern: `snowflake_is_usage_*<customer_normalized>*.csv`

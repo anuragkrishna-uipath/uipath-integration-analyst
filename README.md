@@ -5,7 +5,7 @@ A Intefration assistant toolkit for analyzing UiPath customer data w.r.t integra
 ## Features
 
 - **Customer Profile Generation**: 360-degree view combining ARR, license consumption, API usage, and support tickets
-- **Salesforce Integration**: Pull Integration Service cases with flexible filtering
+- **Salesforce Integration**: Pull support cases with flexible customer and product filtering
 - **Snowflake Analytics**: Query license consumption and API usage data
 - **Customer News Search**: Find recent news articles about customers
 - **Claude Code Skills**: Interactive AI-powered skills for common PM workflows
@@ -173,7 +173,7 @@ Snowflake authentication happens automatically via SSO when running queries - no
 
 ```bash
 # Create directories for cached data
-mkdir -p ${PROJECT_DIR}/{snowflake-data,is-cases}
+mkdir -p ${PROJECT_DIR}/{snowflake-data,sf-cases}
 ```
 
 **Note**: ARR (Annual Recurring Revenue) data is now automatically retrieved from Snowflake when generating customer profiles. No manual file placement is required.
@@ -187,14 +187,14 @@ Verify skills are available:
 cd ${PROJECT_DIR}
 claude
 # Then run: /help
-# You should see the skills listed: customer-profile, sf-integration-cases, etc.
+# You should see the skills listed: customer-profile, sf-cases, etc.
 ```
 
 **Available skills**:
 - `/customer-profile` - Comprehensive customer analysis
-- `/sf-integration-cases` - Pull Salesforce support tickets
+- `/sf-cases` - Pull Salesforce support cases (with optional product filter)
 - `/snowflake-customer-license-info` - Query license consumption
-- `/snowflake-is-usage` - Query Integration Service API usage
+- `/snowflake-usage` - Query Snowflake usage data (extensible via modules)
 - `/customer-in-news` - Search for recent customer news
 
 ### 7. Test Your Setup
@@ -239,9 +239,10 @@ claude
 /customer-profile "Customer Name"
 
 # Pull specific data sources
-/sf-integration-cases 180 "Customer Name"              # Last 180 days of support tickets
+/sf-cases 180 "Customer Name"                          # Last 180 days of support tickets (all products)
+/sf-cases 180 "Customer Name" "Integration Service"    # Last 180 days, IS cases only
 /snowflake-customer-license-info "Customer Name"       # License consumption data
-/snowflake-is-usage "Customer Name"                    # Integration Service API usage (last 3 months)
+/snowflake-usage integration-service "Customer Name"   # Integration Service API usage (last 3 months)
 /customer-in-news "Customer Name"                      # Recent news articles
 
 # Or just ask Claude naturally:
@@ -268,18 +269,21 @@ cd ${PROJECT_DIR}
 bash scripts/subsidiary-license-info.sh "Customer Name"
 
 # Fetch support tickets from Salesforce (last 180 days)
-bash scripts/sf-integration-cases.sh 180 "Customer Name"
+bash scripts/sf-cases.sh 180 "Customer Name"
+
+# Fetch IS-specific support tickets
+bash scripts/sf-cases.sh 180 "Customer Name" "Integration Service"
 
 # Fetch Integration Service API usage from Snowflake (last 3 months)
-bash scripts/snowflake-is-usage.sh "Customer Name"
+bash scripts/snowflake-usage.sh integration-service "Customer Name"
 
 # Query all customers (no customer filter)
-bash scripts/snowflake-is-usage.sh
+bash scripts/snowflake-usage.sh integration-service
 ```
 
 **Note**: Scripts read credentials from `.env` file automatically. Results are saved to:
 - License data: `${PROJECT_DIR}/snowflake-data/`
-- Support tickets: `${PROJECT_DIR}/is-cases/`
+- Support tickets: `${PROJECT_DIR}/sf-cases/`
 - API usage: `${PROJECT_DIR}/snowflake-data/`
 
 ### Understanding the Output
@@ -304,8 +308,8 @@ All data is cached locally to minimize authentication requests:
   - IS usage files: `snowflake_is_usage_<timestamp>_<customer>.csv`
   - Cache duration: License data (no expiry), IS usage (7 days)
 
-- **`is-cases/`** - Support ticket JSON files (auto-generated)
-  - Format: `sf_integration_cases_<days>days_<customer>_<timestamp>.json`
+- **`sf-cases/`** - Support ticket JSON files (auto-generated)
+  - Format: `sf_cases_<days>days_[<product>_]<customer>_<timestamp>.json`
   - Cache duration: 24 hours
 
 **Note**: These directories are in `.gitignore` and will not be committed to version control.
@@ -323,8 +327,8 @@ uipath-integration-analyst/
 ├── scripts/                  # Data extraction bash scripts
 │   ├── README.md             # Detailed script documentation
 │   ├── subsidiary-license-info.sh      # Snowflake license query
-│   ├── sf-integration-cases.sh         # Salesforce cases query
-│   ├── snowflake-is-usage.sh           # Snowflake API usage query
+│   ├── sf-cases.sh                     # Salesforce cases query
+│   ├── snowflake-usage.sh              # Snowflake usage query (extensible)
 │   └── fetch_salesforce_cases.py       # Python Salesforce client (fallback)
 │
 ├── sql/                      # SQL query files for Snowflake
@@ -336,21 +340,21 @@ uipath-integration-analyst/
 ├── .claude/
 │   ├── skills/               # Claude Code interactive skills (project-level)
 │   │   ├── customer-profile/     # Comprehensive customer analysis
-│   │   ├── sf-integration-cases/ # Salesforce case retrieval
+│   │   ├── sf-cases/             # Salesforce case retrieval
 │   │   ├── customer-in-news/     # Web search for customer news
 │   │   ├── snowflake-customer-license-info/ # License data retrieval
-│   │   └── snowflake-is-usage/   # API usage analytics
+│   │   └── snowflake-usage/      # Extensible Snowflake usage queries
 │   └── settings.local.json   # Claude Code local settings (not in git)
 │
 ├── snowflake-data/           # License, ARR & IS usage CSV files (auto-generated from Snowflake, not in git)
-├── is-cases/                 # Support ticket JSON files (auto-generated, not in git)
+├── sf-cases/                 # Support ticket JSON files (auto-generated, not in git)
 └── venv/                     # Python virtual environment (optional, not in git)
 ```
 
 **Key Directories**:
 - **`scripts/`** - Bash scripts that query Snowflake and Salesforce
 - **`.claude/skills/`** - Claude Code skills (automatically available when running Claude in project directory)
-- **`snowflake-data/`, `is-cases/`** - Auto-generated cache directories (created automatically)
+- **`snowflake-data/`, `sf-cases/`** - Auto-generated cache directories (created automatically)
 
 ## Troubleshooting
 
@@ -371,7 +375,7 @@ uipath-integration-analyst/
 - Solution: Always run scripts from project root or use absolute paths:
   ```bash
   cd ${PROJECT_DIR}
-  bash scripts/snowflake-is-usage.sh "Customer Name"
+  bash scripts/snowflake-usage.sh integration-service "Customer Name"
   ```
 
 **"Snowflake authentication failed"**
@@ -447,7 +451,7 @@ This project uses intelligent caching to minimize authentication flows and API c
 | ARR Data | Retrieved from license data | `snowflake-data/subsidiary_license_*.csv` | Included in license data query | Auto-generated from Snowflake |
 | License Data | No expiry | `snowflake-data/subsidiary_license_*.csv` | Per-customer - use if file exists | Auto-generated from Snowflake |
 | IS Usage | 7 days | `snowflake-data/snowflake_is_usage_*.csv` | Per-customer - refresh if > 7 days old | Auto-generated from Snowflake |
-| Support Tickets | 24 hours | `is-cases/sf_integration_cases_*.json` | Per-query - refresh if > 24 hours old | Auto-generated from Salesforce |
+| Support Tickets | 24 hours | `sf-cases/sf_cases_*.json` | Per-query - refresh if > 24 hours old | Auto-generated from Salesforce |
 
 **Cache Invalidation**: Delete specific files in cache directories to force fresh queries.
 
@@ -456,7 +460,7 @@ This project uses intelligent caching to minimize authentication flows and API c
 - Never commit `.env` file or any files containing credentials
 - The `.gitignore` is configured to exclude sensitive data:
   - `.env` (credentials and configuration)
-  - `snowflake-data/`, `is-cases/` (cached customer data)
+  - `snowflake-data/`, `sf-cases/` (cached customer data)
   - `venv/` (Python virtual environment)
 - All authentication uses SSO/OAuth - no passwords in scripts
 - Data directories are excluded from version control

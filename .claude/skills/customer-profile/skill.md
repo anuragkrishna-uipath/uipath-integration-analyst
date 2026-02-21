@@ -32,15 +32,46 @@ When this skill is invoked:
 
 ### 1. Get Customer Name
 - If argument provided (e.g., `/customer-profile "PepsiCo, Inc"`), use that
-- If not provided, ask user using AskUserQuestion
+- **If no argument provided**: Show usage help with sample queries and STOP. Display:
+  ```
+  ## Customer Profile (`/customer-profile`)
+
+  Generate a comprehensive 360-degree customer profile with data-driven action items.
+
+  ### Options
+  | Argument | Required | Description |
+  |----------|----------|-------------|
+  | customer_name | Yes | Customer/subsidiary name |
+
+  ### Sample Queries
+  /customer-profile "PepsiCo, Inc"
+  /customer-profile "Microsoft Corporation"
+  /customer-profile "T-Mobile"
+  /customer-profile "Acme Corp"
+
+  ### Data Sources Aggregated
+  1. License & ARR Data — Snowflake (products, quantities, ARR bucket, account owner, CSM)
+  2. IS Usage — Snowflake (API calls by connector/originator, billable vs non-billable)
+  3. Support Tickets — Salesforce (last 180 days, Integration Service cases)
+  4. Customer News — Web search (recent news, strategic initiatives)
+
+  ### Output Format
+  - Customer Data table (Account, Licenses, IS Usage, Support, News)
+  - Action Items table (3-5 prioritized items with specific data points)
+
+  ### Notes
+  - Profile generation takes 1-3 minutes (queries multiple data sources)
+  - Uses cached data when available to minimize auth flows
+  - Automatically performs web search for customer context
+  ```
 - Normalize name for searches (handle variations)
 
 ### 2. Data Collection Strategy
 
 All data gathering is delegated to specialized skills that handle caching automatically:
 - **License & ARR Data**: Handled by `/snowflake-customer-license-info` skill (uses cached if exists, includes CUSTOMERARRBUCKET, account owner, CSM, region)
-- **IS Usage Data**: Handled by `/snowflake-is-usage` skill (7-day cache)
-- **Support Tickets**: Handled by `/sf-integration-cases` skill (24-hour cache)
+- **IS Usage Data**: Handled by `/snowflake-usage integration-service` skill (7-day cache)
+- **Support Tickets**: Handled by `/sf-cases` skill with "Integration Service" filter (24-hour cache)
 - **Customer News**: Handled by `/customer-in-news` skill (real-time web search)
 
 **IMPORTANT - Provide Status Updates:**
@@ -84,7 +115,7 @@ Example status update format:
 ### 4. Gather Integration Service Usage
 
 **Invoke the skill:**
-- Invoke the `/snowflake-is-usage` skill with customer name only
+- Invoke the `/snowflake-usage integration-service` skill with customer name only
 - The skill reads SNOWFLAKE_USER from .env file automatically
 - The skill will handle caching automatically (7-day cache, fetches if expired or customer not found)
 - After skill completes, read the cached CSV file from `${PROJECT_DIR}/snowflake-data/`
@@ -102,9 +133,10 @@ Example status update format:
 - High poller usage (>90%) is an efficiency concern, NOT a licensing concern
 
 ### 5. Gather Support Tickets (Last 6 Months)
-- Invoke the `/sf-integration-cases` skill with 180 days and customer name
+- Invoke the `/sf-cases` skill with 180 days, customer name, and "Integration Service" product filter
+  - Example: `/sf-cases 180 "PepsiCo, Inc" "Integration Service"`
 - The skill will handle caching automatically (24-hour cache, fetches if expired or customer not found)
-- After skill completes, read the cached JSON file from `${PROJECT_DIR}/is-cases/`
+- After skill completes, read the cached JSON file from `${PROJECT_DIR}/sf-cases/`
 - Extract:
   - Total tickets
   - Open vs closed tickets

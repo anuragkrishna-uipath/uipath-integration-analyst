@@ -25,16 +25,20 @@ This directory contains scripts for extracting data from Snowflake and Salesforc
 
 ---
 
-### `snowflake-is-usage.sh`
-**Purpose**: Query Snowflake for Integration Service API usage data (last 3 months)
+### `snowflake-usage.sh`
+**Purpose**: Generic Snowflake usage query tool (extensible via `snowflake-modules.conf`)
 
 **Usage**:
 ```bash
-# Query specific customer
-./snowflake-is-usage.sh "Customer Name"
+# Show available modules
+./snowflake-usage.sh
+
+# Query specific customer for a module
+./snowflake-usage.sh integration-service "Customer Name"
+./snowflake-usage.sh is "Customer Name"    # Short alias
 
 # Query all customers
-./snowflake-is-usage.sh
+./snowflake-usage.sh integration-service
 ```
 
 **Requirements**:
@@ -42,30 +46,29 @@ This directory contains scripts for extracting data from Snowflake and Salesforc
 - SNOWFLAKE_USER and PROJECT_DIR configured in ../.env
 - Active SSO authentication to Snowflake
 
-**SQL**:
-- With customer: `../sql/is_usage_query_with_customer.sql`
-- All customers: `../sql/is_usage_query_all.sql`
+**SQL**: Module-specific SQL files in `../sql/` (configured in `snowflake-modules.conf`)
 
-**Output**:
-- With customer: `${PROJECT_DIR}/snowflake-data/snowflake_is_usage_<timestamp>_<customer_slug>.csv`
-- All customers: `${PROJECT_DIR}/snowflake-data/snowflake_is_usage_<timestamp>.csv`
+**Output**: `${PROJECT_DIR}/snowflake-data/snowflake_<module>_<timestamp>[_<customer_slug>].csv`
 
-**Caching**: Uses cached data if < 7 days old and contains data rows
+**Caching**: Per-module cache TTL (Integration Service: 7 days)
 
 ---
 
 ## Salesforce Scripts
 
-### `sf-integration-cases.sh`
-**Purpose**: Query Salesforce for Integration Service support cases
+### `sf-cases.sh`
+**Purpose**: Query Salesforce for support cases with optional customer and product filters
 
 **Usage**:
 ```bash
 # Query all customers for last N days
-./sf-integration-cases.sh <days>
+./sf-cases.sh <days>
 
 # Query specific customer
-./sf-integration-cases.sh <days> "Customer Name"
+./sf-cases.sh <days> "Customer Name"
+
+# Query specific customer and product
+./sf-cases.sh <days> "Customer Name" "Integration Service"
 ```
 
 **Requirements**:
@@ -73,9 +76,7 @@ This directory contains scripts for extracting data from Snowflake and Salesforc
 - SALESFORCE_ORG_ALIAS configured in ../.env
 - Active SSO authentication to Salesforce
 
-**Output**:
-- All customers: `${PROJECT_DIR}/is-cases/sf_integration_cases_<days>days_<timestamp>.json`
-- Specific customer: `${PROJECT_DIR}/is-cases/sf_integration_cases_<days>days_<customer_slug>_<timestamp>.json`
+**Output**: `${PROJECT_DIR}/sf-cases/sf_cases_<days>days_[<product_slug>_][<customer_slug>_]<timestamp>.json`
 
 **Caching**: Uses cached data if < 24 hours old and contains records
 
