@@ -56,14 +56,22 @@ When this skill is invoked:
    bash ${PROJECT_DIR}/scripts/snowflake-usage.sh   # Show help
    ```
 
-4. **Display results**:
+4. **Clean up stale cache files** (after successful fresh pull):
+   - After the script succeeds (exit code 0), identify the newly created CSV file (the one just written by the script)
+   - Find all older files in `${PROJECT_DIR}/snowflake-data/` matching the same module and customer pattern: `snowflake_<module_id>_*[_<customer_normalized>].csv`
+   - Delete all matching files EXCEPT the newly created one
+   - Display: "🗑️ Cleaned up N stale cache file(s)"
+   - If no older files exist, skip silently (no message needed)
+
+5. **Display results**:
    - Script saves CSV to `${PROJECT_DIR}/snowflake-data/snowflake_<module_id>_<timestamp>[_<customer>].csv`
    - After script completes, read the CSV and create a formatted summary
    - For module-specific interpretation, refer to the Module-Specific Notes section below
 
-5. **Handle errors**:
+6. **Handle errors**:
    - If SNOWFLAKE_USER not configured: Inform user to set it in .env file
    - If script fails: Suggest running `snowsql -a ${SNOWFLAKE_ACCOUNT} -u ${SNOWFLAKE_USER} --authenticator externalbrowser`
+   - Do NOT delete any existing cache files on error (keep stale data as fallback)
 
 ## Available Modules
 
@@ -154,3 +162,4 @@ Capacity Utilization = Billable API Calls / Licensed API Capacity
 - All queries are read-only
 - Module config at `${PROJECT_DIR}/snowflake-modules.conf` — edit to add new modules
 - Cache files with no data rows trigger fresh queries automatically
+- Stale cache files are automatically deleted after a successful fresh pull (only the latest file is kept)

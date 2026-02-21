@@ -54,7 +54,6 @@ SALESFORCE_ORG_ALIAS=uipath
 - Target org configured via .env (SALESFORCE_ORG_ALIAS)
 - Instance URL configured via .env (SALESFORCE_INSTANCE_URL)
 - First run: `sf org login web --instance-url ${SALESFORCE_INSTANCE_URL} --alias ${SALESFORCE_ORG_ALIAS}`
-- Python fallback script (`fetch_salesforce_cases.py`) supports multiple auth methods
 
 ## Skills Usage
 
@@ -89,6 +88,8 @@ All data-fetching skills implement intelligent caching with data validation to m
 
 **Key Principle**: All skills validate cached files contain actual data before using them. Empty cache files trigger fresh queries automatically.
 
+**Stale File Cleanup**: When cache expires and fresh data is pulled successfully, each skill automatically deletes older cache files for the same customer/query combination. Only the latest file is kept. Cleanup only runs after a successful fresh pull — on error, stale files are preserved as fallback.
+
 ## File Organization
 
 ```
@@ -102,8 +103,7 @@ ${PROJECT_DIR}/                   # Base directory (configurable via .env)
 ├── scripts/                      # Data extraction scripts
 │   ├── subsidiary-license-info.sh         # Snowflake license query script
 │   ├── sf-cases.sh                        # Salesforce case query script
-│   ├── snowflake-usage.sh                 # Generic Snowflake usage query tool
-│   └── fetch_salesforce_cases.py          # Python Salesforce client
+│   └── snowflake-usage.sh                 # Generic Snowflake usage query tool
 ├── .claude/
 │   └── skills/                   # Claude Code skills
 │       ├── customer-profile/     # Main customer profiling skill
@@ -111,8 +111,7 @@ ${PROJECT_DIR}/                   # Base directory (configurable via .env)
 │       ├── customer-in-news/     # Web search for customer news
 │       ├── snowflake-customer-license-info/
 │       └── snowflake-usage/      # Extensible Snowflake usage queries
-├── .env                          # Configuration (not in repo)
-└── venv/                         # Python virtual environment
+└── .env                          # Configuration (not in repo)
 ```
 
 **Note**:
@@ -144,13 +143,7 @@ For detailed query specifications, table schemas, and data parsing patterns, ref
 
 ## Environment Setup
 
-This project uses a Python virtual environment for the Salesforce client:
-```bash
-source venv/bin/activate  # Activate venv
-pip install simple-salesforce  # Required for fetch_salesforce_cases.py
-```
-
-The `.env` file contains Salesforce configuration but NOT credentials (SSO-based auth).
+The `.env` file contains Salesforce and Snowflake configuration but NOT credentials (SSO-based auth).
 
 ## Communication Style
 

@@ -117,7 +117,14 @@ When this skill is invoked:
    bash ${PROJECT_DIR}/scripts/sf-cases.sh 30 "Acme Corp" "Integration Service"
    ```
 
-4. **Display results**:
+4. **Clean up stale cache files** (after successful fresh pull):
+   - After the script succeeds (exit code 0), identify the newly created JSON file (the one just written by the script)
+   - Find all older files in `${PROJECT_DIR}/sf-cases/` matching the same pattern: `sf_cases_*days_[<product_normalized>_]<customer_normalized>_*.json`
+   - Delete all matching files EXCEPT the newly created one
+   - Display: "🗑️ Cleaned up N stale cache file(s)"
+   - If no older files exist, skip silently (no message needed)
+
+5. **Display results**:
    - The script will output a summary with total cases, status breakdown, and high priority cases
    - The script saves detailed JSON results to:
      - `${PROJECT_DIR}/sf-cases/sf_cases_<days>days_[<product_slug>_][<customer_slug>_]<timestamp>.json`
@@ -134,9 +141,10 @@ When this skill is invoked:
    - Highlight high/critical priority cases with ⚠️ marker
    - If no product filter was specified, group cases by Deployment_Type_Product_Component__c for overview
 
-5. **Handle errors**:
+6. **Handle errors**:
    - If the script fails (exit code != 0), inform the user about authentication issues
    - Suggest running: `sf org login web --instance-url https://uipath.my.salesforce.com --alias uipath`
+   - Do NOT delete any existing cache files on error (keep stale data as fallback)
 
 ## Direct Script Usage
 
@@ -230,3 +238,4 @@ bash ${PROJECT_DIR}/scripts/sf-cases.sh 180 "Acme Corp" "Integration Service"   
 - Fetches the Solution__c field to capture case resolutions
 - Fetches Account.Name to display customer information
 - Cache files older than 24 hours or with no records trigger fresh queries automatically
+- Stale cache files are automatically deleted after a successful fresh pull (only the latest file is kept)
