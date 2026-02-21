@@ -18,13 +18,48 @@ This skill helps you quickly understand what's happening with a customer by:
 - Providing context for customer conversations
 - Identifying potential risks or opportunities
 
+## Scope Boundary (CRITICAL)
+
+**This skill does EXACTLY what is requested — nothing more, nothing less.**
+
+- Search for news about the exact customer name provided
+- If no relevant news found, report "No recent news found for <name>" and STOP
+- **Do NOT** broaden the search to parent companies, subsidiaries, or related entities
+- **Do NOT** suggest or run alternative queries unless the user explicitly asks
+
 ## Instructions
 
 When this skill is invoked:
 
 1. **Get customer name**:
    - If an argument is provided (e.g., `/customer-in-news PepsiCo`), use that as the customer name
-   - If no argument is provided, ask the user for the customer name using AskUserQuestion
+   - **If no argument is provided**: Show usage help with sample queries and STOP. Display:
+     ```
+     ## Customer in News (`/customer-in-news`)
+
+     Search the web for top 3 recent news articles about a customer.
+
+     ### Options
+     | Argument | Required | Description |
+     |----------|----------|-------------|
+     | customer_name | Yes | Company name to search for |
+
+     ### Sample Queries
+     /customer-in-news "PepsiCo"
+     /customer-in-news "Microsoft Corporation"
+     /customer-in-news "Walmart"
+     /customer-in-news "Acme Corp"
+
+     ### Data Returned
+     - Top 3 recent news articles summarized in a 3-line narrative
+     - Key metrics: financials, partnerships, strategic initiatives
+     - Source URLs for all referenced articles
+
+     ### Notes
+     - Real-time web search (no caching)
+     - Prioritizes press releases, industry publications, major news outlets
+     - Focuses on business-relevant news from the last 30 days
+     ```
 
 2. **Search for recent news**:
    - Use WebSearch with a query like: `"<customer_name>" news 2026`

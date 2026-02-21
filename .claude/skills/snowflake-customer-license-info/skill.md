@@ -20,14 +20,50 @@ Query Snowflake to retrieve license consumption and ARR data for a specific cust
 - **Table**: CustomerSubsidiaryLicenseProfile
 - **Query Type**: Read-only (license consumption data)
 
+## Scope Boundary (CRITICAL)
+
+**This skill does EXACTLY what is requested — nothing more, nothing less.**
+
+- Query license data for the exact subsidiary name provided
+- If 0 results are returned, report "No license data found for <name>" and STOP
+- **Do NOT** broaden the search by trying alternative name variations
+- **Do NOT** suggest or run alternative queries unless the user explicitly asks
+- **Do NOT** add supplementary analysis beyond what the query returns
+
 ## Instructions
 
 When this skill is invoked:
 
 1. **Get parameters**:
    - First argument (required): Subsidiary name (e.g., "PepsiCo, Inc", "Microsoft Corporation")
-   - If subsidiary name not provided, ask the user using AskUserQuestion
    - Username is read from .env file (SNOWFLAKE_USER)
+   - **If no arguments provided**: Show usage help with sample queries and STOP. Display:
+     ```
+     ## Customer License Info (`/snowflake-customer-license-info`)
+
+     Query Snowflake for customer license consumption and ARR data.
+
+     ### Options
+     | Argument | Required | Description |
+     |----------|----------|-------------|
+     | subsidiary_name | Yes | Customer/subsidiary name (partial match, case-insensitive) |
+
+     ### Sample Queries
+     /snowflake-customer-license-info "PepsiCo, Inc"
+     /snowflake-customer-license-info "Microsoft Corporation"
+     /snowflake-customer-license-info "T-Mobile"
+     /snowflake-customer-license-info "Acme Corp"
+
+     ### Data Returned
+     - ARR bucket, region, account owner, CSM name
+     - License quantities by product (Studio, Robots, API Calls, DU Units, AI Units, etc.)
+     - Historical license consumption by month
+
+     ### Notes
+     - Uses partial matching (e.g., "Pepsi" matches "PepsiCo, Inc")
+     - Cache: Uses cached data if customer file exists (any age)
+     - Data source: Snowflake (prod_customer360.customerprofile.CustomerSubsidiaryLicenseProfile)
+     ```
 
 2. **Check cache first**:
    - Look for files in `${PROJECT_DIR}/snowflake-data/` matching pattern: `subsidiary_license_<subsidiary_normalized>_*.csv`

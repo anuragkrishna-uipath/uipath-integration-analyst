@@ -12,14 +12,14 @@ This is a Product Manager assistant toolkit for analyzing UiPath customer data. 
 
 1. **Data Extraction Scripts** (bash shells in `scripts/` directory)
    - `scripts/subsidiary-license-info.sh` - Queries Snowflake for customer license data
-   - `scripts/sf-integration-cases.sh` - Queries Salesforce for support tickets
-   - `scripts/snowflake-is-usage.sh` - Queries Snowflake for Integration Service API usage
+   - `scripts/sf-cases.sh` - Queries Salesforce for support cases (with optional customer/product filters)
+   - `scripts/snowflake-usage.sh` - Generic Snowflake usage query tool (modules in `snowflake-modules.conf`)
    - All scripts save results to `~/Documents/uipath-integration-analyst/` subdirectories with timestamped filenames
 
 2. **Data Storage Locations**
    - `~/Documents/uipath-integration-analyst/arr/` - ARR and API usage CSV files (cached weekly)
    - `~/Documents/uipath-integration-analyst/snowflake-data/` - License consumption CSV files (cached per customer)
-   - `~/Documents/uipath-integration-analyst/is-cases/` - Support ticket JSON files (cached 24 hours)
+   - `~/Documents/uipath-integration-analyst/sf-cases/` - Support ticket JSON files (cached 24 hours)
 
 3. **Claude Skills** (in `.claude/skills/` directory)
    - Each skill has a `skill.md` file defining its behavior
@@ -65,15 +65,17 @@ SALESFORCE_ORG_ALIAS=uipath
 # Search for customer in news
 /customer-in-news "Customer Name"
 
-# Pull Salesforce Integration Service cases
-/sf-integration-cases 180 "Customer Name"
+# Pull Salesforce cases (with optional customer and product filters)
+/sf-cases 180 "Customer Name"                        # All products for customer
+/sf-cases 180 "Customer Name" "Integration Service"  # IS cases only
 
 # Query Snowflake license info (username from .env)
 /snowflake-customer-license-info "Customer Name"
 
-# Query Snowflake IS usage (username from .env, checks cache for customer, queries if not found)
-/snowflake-is-usage "Customer Name"
-/snowflake-is-usage  # All customers
+# Query Snowflake usage data (extensible via snowflake-modules.conf)
+/snowflake-usage integration-service "Customer Name"
+/snowflake-usage is "Customer Name"    # Short alias
+/snowflake-usage                       # Show available modules
 ```
 
 ## Caching Strategy
@@ -82,8 +84,8 @@ All data-fetching skills implement intelligent caching with data validation to m
 
 - **ARR data**: Manual cache management - use if < 7 days old
 - **License data**: See `/snowflake-customer-license-info` skill - uses cache if customer file exists with data (any age)
-- **IS Usage data**: See `/snowflake-is-usage` skill - uses cache if < 7 days old and contains data rows
-- **Support tickets**: See `/sf-integration-cases` skill - uses cache if < 24 hours old and has records
+- **IS Usage data**: See `/snowflake-usage` skill - per-module cache TTL (IS: 7 days), validated before use
+- **Support tickets**: See `/sf-cases` skill - uses cache if < 24 hours old and has records
 
 **Key Principle**: All skills validate cached files contain actual data before using them. Empty cache files trigger fresh queries automatically.
 
@@ -92,23 +94,23 @@ All data-fetching skills implement intelligent caching with data validation to m
 ```
 ${PROJECT_DIR}/                   # Base directory (configurable via .env)
 ├── snowflake-data/               # License consumption & ARR data (CSV)
-├── is-cases/                     # Support tickets (JSON)
+├── sf-cases/                     # Support tickets (JSON)
 ├── sql/                          # SQL query files (modular)
 │   ├── subsidiary_license_query.sql       # License consumption query
 │   ├── is_usage_query_with_customer.sql   # IS usage with customer filter
 │   └── is_usage_query_all.sql             # IS usage all customers
 ├── scripts/                      # Data extraction scripts
 │   ├── subsidiary-license-info.sh         # Snowflake license query script
-│   ├── sf-integration-cases.sh            # Salesforce case query script
-│   ├── snowflake-is-usage.sh              # Snowflake API usage query script
+│   ├── sf-cases.sh                        # Salesforce case query script
+│   ├── snowflake-usage.sh                 # Generic Snowflake usage query tool
 │   └── fetch_salesforce_cases.py          # Python Salesforce client
 ├── .claude/
 │   └── skills/                   # Claude Code skills
 │       ├── customer-profile/     # Main customer profiling skill
-│       ├── sf-integration-cases/ # Salesforce case fetching
+│       ├── sf-cases/             # Salesforce case fetching
 │       ├── customer-in-news/     # Web search for customer news
 │       ├── snowflake-customer-license-info/
-│       └── snowflake-is-usage/
+│       └── snowflake-usage/      # Extensible Snowflake usage queries
 ├── .env                          # Configuration (not in repo)
 └── venv/                         # Python virtual environment
 ```
@@ -130,13 +132,13 @@ This project integrates data from two primary sources:
      - Provides: License quantities by product, account metadata, ARR bucket
    - **IS telemetry**: `PROD_ELEMENTSERVICE.APPINS.INTEGRATIONSERVICE_TELEMETRY_STANDARDIZED`
      - Provides: API usage by connector, originator, and customer
-   - See: `/snowflake-customer-license-info` and `/snowflake-is-usage` skills for details
+   - See: `/snowflake-customer-license-info` and `/snowflake-usage` skills for details
 
 2. **Salesforce** - Support cases and customer issues
    - Instance: Configured in .env (SALESFORCE_INSTANCE_URL)
    - Org: Configured in .env (SALESFORCE_ORG_ALIAS)
-   - Case object with Integration Service product component filter
-   - See: `/sf-integration-cases` skill for details
+   - Case object with optional product component filter (e.g., Integration Service)
+   - See: `/sf-cases` skill for details
 
 For detailed query specifications, table schemas, and data parsing patterns, refer to individual skill documentation.
 

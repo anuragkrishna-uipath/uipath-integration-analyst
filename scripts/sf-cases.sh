@@ -1,8 +1,9 @@
 #!/bin/bash
 
-# Salesforce Integration Service Cases Query Script
-# Usage: ./sf-integration-cases.sh [days] [customer_name]
-# Default: 7 days, all customers
+# Salesforce Cases Query Script
+# Usage: ./sf-cases.sh [days] [customer_name] [product_filter]
+# Default: 7 days, all customers, all products
+# product_filter: Optional product component filter (e.g., "Integration Service")
 
 # Get script directory and load .env file from parent directory
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -13,6 +14,7 @@ fi
 
 days=${1:-7}
 customer_name=$2
+product_filter=$3
 timestamp=$(date +%Y%m%d_%H%M%S)
 sf_org=${SALESFORCE_ORG_ALIAS:-"uipath"}
 project_dir=${PROJECT_DIR:-$SCRIPT_DIR}
@@ -20,28 +22,38 @@ project_dir=${PROJECT_DIR:-$SCRIPT_DIR}
 # Expand tilde in project_dir
 project_dir="${project_dir/#\~/$HOME}"
 
-# Create is-cases directory if it doesn't exist
-mkdir -p "$project_dir/is-cases"
+# Create sf-cases directory if it doesn't exist
+mkdir -p "$project_dir/sf-cases"
 
 # Build output filename
+filename_parts="sf_cases_${days}days"
+if [ -n "$product_filter" ]; then
+    product_slug=$(echo "$product_filter" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
+    filename_parts="${filename_parts}_${product_slug}"
+fi
 if [ -n "$customer_name" ]; then
     customer_slug=$(echo "$customer_name" | tr '[:upper:]' '[:lower:]' | tr ' ' '_')
-    output_file="$project_dir/is-cases/sf_integration_cases_${days}days_${customer_slug}_${timestamp}.json"
-else
-    output_file="$project_dir/is-cases/sf_integration_cases_${days}days_${timestamp}.json"
+    filename_parts="${filename_parts}_${customer_slug}"
 fi
+output_file="$project_dir/sf-cases/${filename_parts}_${timestamp}.json"
 
 echo "=========================================="
-echo "Salesforce Integration Service Cases"
+echo "Salesforce Cases"
 echo "=========================================="
 echo "Querying cases from last $days days..."
 if [ -n "$customer_name" ]; then
     echo "Filtering by customer: $customer_name"
 fi
+if [ -n "$product_filter" ]; then
+    echo "Filtering by product: $product_filter"
+fi
 echo ""
 
 # Build the WHERE clause
-where_clause="CreatedDate = LAST_N_DAYS:$days AND Deployment_Type_Product_Component__c LIKE '%Integration Service%'"
+where_clause="CreatedDate = LAST_N_DAYS:$days"
+if [ -n "$product_filter" ]; then
+    where_clause="$where_clause AND Deployment_Type_Product_Component__c LIKE '%$product_filter%'"
+fi
 if [ -n "$customer_name" ]; then
     where_clause="$where_clause AND Account.Name LIKE '%$customer_name%'"
 fi
